@@ -1,0 +1,177 @@
+const { test, before, after } = require('node:test')
+const assert = require('node:assert/strict')
+const { spawn } = require('node:child_process')
+const { once } = require('node:events')
+const { mkdtemp, readFile, rm } = require('node:fs/promises')
+const { tmpdir } = require('node:os')
+const path = require('node:path')
+const { chromium } = require('playwright')
+let browser, server, storage, base
+before(async () => {
+  storage = await mkdtemp(path.join(tmpdir(), 'diego-contact-browser-'))
+  server = spawn(process.execPath, ['server/index.mjs'], { env: { ...process.env, CONTACT_PORT: '0', CONTACT_STORAGE_DIR: storage }, stdio: ['ignore', 'pipe', 'pipe'] })
+  base = await new Promise((resolve, reject) => {
+    let output = ''
+    const timer = setTimeout(() => reject(new Error('Contact server did not start')), 10000)
+    server.stdout.on('data', data => { output += data; const match = output.match(/http:\/\/127\.0\.0\.1:\d+/); if (match) { clearTimeout(timer); resolve(match[0]) } })
+    server.on('error', reject)
+    server.once('exit', code => { clearTimeout(timer); reject(new Error(`Server exited: ${code}`)) })
+  })
+  browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH } : {}) })
+})
+after(async () => { await browser?.close(); if (server?.exitCode === null) { const closed = once(server, 'exit'); server.kill('SIGTERM'); await closed } if (storage) await rm(storage, { recursive: true, force: true }) })
+async function open(options = {}) {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 960 }, ...options })
+  await page.goto(`${base}/#/contacto`)
+  await page.locator('.contact-form').waitFor()
+  return page
+}
+const fillMessage = async page => {
+  await page.getByRole('textbox', { name: 'Nombre', exact: true }).fill('Prueba de adjuntos')
+  await page.getByRole('textbox', { name: 'Email', exact: true }).fill('musica@example.com')
+  await page.getByRole('textbox', { name: 'Mensaje', exact: true }).fill('Propuesta de colaboración con un demo.')
+}
+
+test('contact selects, removes, drops and uploads real attachments with the message', async () => {
+  const page = await open()
+  const input = page.locator('input[type="file"]')
+  await input.setInputFiles([
+    { name: 'demo.wav', mimeType: 'audio/wav', buffer: Buffer.from('RIFF-demo-audio') },
+    { name: 'brief.pdf', mimeType: 'application/pdf', buffer: Buffer.from('Brief musical') },
+  ])
+  assert.equal(await page.locator('.attachment-list li').count(), 2)
+  await page.getByRole('button', { name: 'Quitar brief.pdf' }).click()
+  assert.equal(await page.locator('.attachment-list li').count(), 1)
+  await input.setInputFiles({ name: 'rechazado.exe', mimeType: 'application/octet-stream', buffer: Buffer.from('invalid') })
+  assert.match(await page.getByRole('alert').textContent(), /rechazado.exe/)
+  await page.locator('.file-dropzone').evaluate(element => {
+    const transfer = new DataTransfer()
+    transfer.items.add(new File(['Reference notes'], 'referencia.pdf', { type: 'application/pdf' }))
+    element.dispatchEvent(new DragEvent('drop', { dataTransfer: transfer, bubbles: true, cancelable: true }))
+  })
+  assert.equal(await page.locator('.attachment-list li').count(), 2)
+  await fillMessage(page)
+  const receipt = page.waitForResponse(response => response.url().endsWith('/api/contact') && response.status() === 201)
+  await page.getByRole('button', { name: /Enviar mensaje/ }).click()
+  const { id } = await (await receipt).json()
+  await page.getByRole('status').waitFor()
+  assert.match(await page.getByRole('status').textContent(), /Mensaje recibido/)
+  assert.equal(await page.locator('.attachment-list li').count(), 0)
+  const record = JSON.parse(await readFile(path.join(storage, id, 'message.json'), 'utf8'))
+  assert.deepEqual(record.attachments.map(file => file.name), ['demo.wav', 'referencia.pdf'])
+  assert.equal(await readFile(path.join(storage, id, record.attachments[0].storedName), 'utf8'), 'RIFF-demo-audio')
+  await page.close()
+})
+
+test('upload failure keeps the message and attachments for retry', async () => {
+  const page = await open()
+  await fillMessage(page)
+  await page.locator('input[type="file"]').setInputFiles({ name: 'demo.mp3', mimeType: 'audio/mpeg', buffer: Buffer.from('audio') })
+  await page.route('**/api/contact', route => route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'No se pudo guardar el mensaje. Inténtalo de nuevo.' }) }))
+  await page.getByRole('button', { name: /Enviar mensaje/ }).click()
+  await page.getByRole('alert').waitFor()
+  assert.equal(await page.locator('.attachment-list li').count(), 1)
+  assert.equal(await page.getByRole('textbox', { name: 'Nombre', exact: true }).inputValue(), 'Prueba de adjuntos')
+  assert.equal(await page.getByRole('status').count(), 0)
+  await page.unroute('**/api/contact')
+  await page.getByRole('button', { name: /Enviar mensaje/ }).click()
+  await page.getByRole('status').waitFor()
+  await page.close()
+})
+
+test('mobile file picker, long file names and form remain usable at 320px', async () => {
+  const page = await open({ viewport: { width: 320, height: 740 }, isMobile: true, hasTouch: true })
+  const picker = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: /Añadir archivos/ }).tap()
+  await (await picker).setFiles({ name: `${'demo-con-un-nombre-muy-largo-'.repeat(4)}.mp3`, mimeType: 'audio/mpeg', buffer: Buffer.from('audio') })
+  assert.equal(await page.locator('.attachment-list li').count(), 1)
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
+  await page.getByRole('button', { name: /^Quitar/ }).tap()
+  assert.equal(await page.locator('.attachment-list li').count(), 0)
+  await page.close()
+})
+
+
+test('mobile pages fit compact phones, larger phones and landscape with reachable controls', async () => {
+  const page = await open({ viewport: { width: 320, height: 568 }, isMobile: true, hasTouch: true })
+  for (const viewport of [{ width: 320, height: 568 }, { width: 375, height: 667 }, { width: 390, height: 844 }, { width: 430, height: 932 }, { width: 844, height: 390 }]) {
+    await page.setViewportSize(viewport)
+    for (const route of ['', 'proyectos', 'contacto']) {
+      await page.goto(`${base}/#/${route}`)
+      if (route === 'proyectos') await page.waitForFunction(() => document.querySelector('.gallery').getAttribute('aria-hidden') === 'false' && Math.abs(scrollY - (document.querySelector('.scroll-story').getBoundingClientRect().height - document.querySelector('.story-stage').getBoundingClientRect().height) / Number(document.querySelector('.scroll-story').dataset.lastScene)) < 2)
+      await page.waitForTimeout(80)
+      const layout = await page.evaluate(() => ({
+        overflow: document.documentElement.scrollWidth > innerWidth,
+        nav: [...document.querySelectorAll('.site-nav a, .wordmark')].map(element => { const box = element.getBoundingClientRect(); return { width: box.width, height: box.height, right: box.right } }),
+        controls: document.querySelector('.gallery-bottom')?.getBoundingClientRect().bottom,
+        viewport: innerHeight,
+      }))
+      assert.equal(layout.overflow, false, `${viewport.width}x${viewport.height} / ${route}`)
+      assert.ok(layout.nav.every(box => box.width >= 44 && box.height >= 44 && box.right <= viewport.width))
+      if (route === 'proyectos') {
+        assert.ok(layout.controls <= layout.viewport + 1, `Controls below viewport: ${JSON.stringify(layout)}`)
+        const hitAreas = await page.locator('.carousel-image').evaluateAll(elements => elements.map(element => ({ width: element.getBoundingClientRect().width, height: element.getBoundingClientRect().height })))
+        assert.ok(hitAreas.every(box => box.width >= 43.9 && box.height >= 43.9))
+        const artwork = await page.locator('.carousel-image[aria-current] img').boundingBox()
+        const stage = await page.locator('.carousel').boundingBox()
+        assert.ok(artwork.y >= stage.y && artwork.y + artwork.height <= stage.y + stage.height)
+        assert.ok(await page.getByRole('button', { name: 'Lanzamiento siguiente', exact: true }).isVisible())
+      }
+    }
+  }
+  await page.close()
+})
+
+test('mobile form supports readable fields, a reduced keyboard viewport and a real touch submission', async () => {
+  const page = await open({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+  const fields = await page.locator('.contact-fields input').evaluateAll(elements => elements.map(element => ({ font: parseFloat(getComputedStyle(element).fontSize), box: element.getBoundingClientRect().toJSON() })))
+  assert.ok(fields.every(field => field.font >= 16 && field.box.height >= 44))
+  assert.ok(fields[1].box.y >= fields[0].box.bottom, 'Fields should be stacked on mobile')
+  assert.equal(await page.locator('.file-picker-drag-hint').isVisible(), false)
+  assert.equal(await page.locator('.file-picker-touch-hint').isVisible(), true)
+  await page.getByRole('textbox', { name: 'Email', exact: true }).tap()
+  // Approximate the viewport remaining above an on-screen keyboard.
+  await page.setViewportSize({ width: 390, height: 420 })
+  await fillMessage(page)
+  await page.getByRole('textbox', { name: 'Mensaje', exact: true }).scrollIntoViewIfNeeded()
+  const messageBox = await page.getByRole('textbox', { name: 'Mensaje', exact: true }).boundingBox()
+  assert.ok(messageBox.y >= 0 && messageBox.y + messageBox.height <= 420)
+  await page.locator('input[type="file"]').setInputFiles({ name: 'demo-movil.wav', mimeType: 'audio/wav', buffer: Buffer.from('mobile-audio') })
+  await page.setViewportSize({ width: 390, height: 844 })
+  const receipt = page.waitForResponse(response => response.url().endsWith('/api/contact') && response.status() === 201)
+  await page.getByRole('button', { name: /Enviar mensaje/ }).tap()
+  const { id } = await (await receipt).json()
+  await page.getByRole('status').waitFor()
+  assert.match(await page.getByRole('status').textContent(), /Mensaje recibido/)
+  const record = JSON.parse(await readFile(path.join(storage, id, 'message.json'), 'utf8'))
+  assert.equal(record.attachments[0].name, 'demo-movil.wav')
+  await page.close()
+})
+
+
+test('home and projects share one pinned scroll timeline and navigation returns to its beginning', async () => {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+  await page.goto(`${base}/#/`)
+  await page.locator('.story-home').waitFor()
+  assert.equal(await page.locator('.carousel-image[aria-current]').count(), 0)
+  const step = await page.evaluate(() => (document.querySelector('.scroll-story').getBoundingClientRect().height - document.querySelector('.story-stage').getBoundingClientRect().height) / Number(document.querySelector('.scroll-story').dataset.lastScene))
+  await page.evaluate(y => scrollTo(0, y), step * 0.3)
+  await page.waitForTimeout(60)
+  const homeScale = await page.locator('.story-home').evaluate(element => new DOMMatrix(getComputedStyle(element).transform).a)
+  assert.ok(homeScale < 0.95 && homeScale > 0.6)
+  assert.equal(await page.locator('.carousel-image[aria-current]').count(), 0)
+  await page.getByRole('link', { name: 'Proyectos', exact: true }).tap()
+  await page.waitForFunction(() => document.querySelector('.gallery').getAttribute('aria-hidden') === 'false')
+  await page.waitForTimeout(1000)
+  assert.equal(await page.locator('.carousel-image[aria-current]').getAttribute('data-image-index'), '0')
+  await page.getByRole('button', { name: 'Lanzamiento siguiente', exact: true }).tap()
+  await page.waitForTimeout(1000)
+  assert.equal(await page.locator('.carousel-image[aria-current]').getAttribute('data-image-index'), '1')
+  await page.getByRole('link', { name: 'Inicio', exact: true }).tap()
+  await page.waitForFunction(() => scrollY < 1)
+  assert.equal(await page.locator('.carousel-image[aria-current]').count(), 0)
+  await page.getByRole('link', { name: 'Contacto', exact: true }).tap()
+  await page.locator('.contact-form').waitFor()
+  assert.equal(await page.locator('.scroll-story').count(), 0)
+  await page.close()
+})

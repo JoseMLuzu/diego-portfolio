@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { MouseEvent } from 'react'
 import { useReducedMotion } from 'motion/react'
+import { Contact } from './components/Contact'
 import { VerticalCarousel } from './components/VerticalCarousel'
 import type { CarouselHandle } from './components/VerticalCarousel'
 import { releases } from './data/releases'
@@ -66,7 +67,7 @@ export default function App() {
         </nav>
       </header>
       <main ref={main} tabIndex={-1} className={isContact ? 'contact-page' : 'home'}>
-        {isContact ? <section className="home-intro"><div className="home-hero"><h1>Contacto</h1></div></section> : (
+        {isContact ? <Contact /> : (
           <>
             <VerticalCarousel ref={story} images={releases} onSceneChange={scene => setVisibleSection(scene === 0 ? 'home' : 'projects')} />
             <footer className="projects-outro"><a href="#/contacto">Hablemos de tu próximo proyecto <span aria-hidden="true">↗</span></a></footer>
