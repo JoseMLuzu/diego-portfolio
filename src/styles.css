@@ -53,8 +53,27 @@ main:focus, .projects-section:focus { outline: none; }
 .home-social:disabled { color: #a5a19b; cursor: default; }
 .home-footer { min-height: calc(72px + env(safe-area-inset-bottom, 0px)); flex-shrink: 0; padding: 12px max(var(--gutter), env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(var(--gutter), env(safe-area-inset-left, 0px)); display: flex; align-items: center; justify-content: space-between; gap: 16px; font-size: 11px; color: #a5a19b; }
 .home-footer a { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; }
+.home-copyright { margin-left: auto; }
+.story-home { isolation: isolate; }
+.story-home .home-hero, .story-home .home-footer { position: relative; z-index: 1; pointer-events: none; }
+.story-home .home-hero > *, .story-home .home-footer > * { pointer-events: auto; }
+.home-hero h1 { text-shadow: 0 0 24px #0b0b0c, 0 0 9px #0b0b0c; }
+.about-water { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.about-water-copy { fill: #b8c7c3; font-size: 16px; font-weight: 400; letter-spacing: .15px; }
 
+/* Archived popover styles. Its render and import are commented in VerticalCarousel.tsx. */
+.home-about { position: relative; z-index: 2; }
+.home-about-trigger { display: inline-flex; align-items: center; justify-content: space-between; gap: 20px; min-width: 102px; min-height: 44px; border: 0; padding: 10px 0; background: transparent; color: #b8b3ac; font-size: 12px; text-align: left; }
+.home-about-trigger > span { color: #e15c3b; font-size: 19px; line-height: 1; }
+.home-about-panel { position: absolute; left: 0; bottom: 100%; width: min(340px, calc(100vw - 2 * var(--gutter) - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))); padding-bottom: 14px; pointer-events: none; will-change: opacity, filter, transform; }
+.home-about-copy { padding: 22px; border: 1px solid transparent; background: transparent; text-align: left; transition: background 220ms, border-color 220ms; }
+.home-about[data-open="true"] .home-about-panel { pointer-events: auto; }
+.home-about[data-open="true"] .home-about-copy { background: #111113f5; border-color: #ffffff16; }
+.about-eyebrow { display: block; font-size: 10px; font-weight: 400; letter-spacing: 1.6px; text-transform: uppercase; color: #a5a19b; }
+.home-about-copy p { margin: 16px 0 0; font-size: 16px; line-height: 1.65; font-weight: 400; color: #e0dad2; overflow-wrap: anywhere; max-height: max(100px, calc(100svh - var(--header-height) - 200px)); overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y pinch-zoom; }
 @media (hover: hover) and (pointer: fine) {
+  .home-about-panel { pointer-events: auto; }
+  .home-about-trigger:hover { color: #f0eeeb; }
 }
 
 .contact-content { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 28px max(var(--gutter), env(safe-area-inset-right, 0px)) 36px max(var(--gutter), env(safe-area-inset-left, 0px)); text-align: center; }

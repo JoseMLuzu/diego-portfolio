@@ -4,6 +4,9 @@ import type { MotionValue } from 'motion/react'
 import { CAROUSEL_DEFAULTS, SCROLL_STORY_DEFAULTS, clamp, gestureTarget, imageGeometry } from './carouselMath'
 import type { CarouselConfig } from './carouselMath'
 import { HomeSocials } from './HomeSocials'
+// Previous popover idea, preserved in HomeAbout.tsx:
+// import { HomeAbout } from './HomeAbout'
+import { HomeAboutWater } from './HomeAboutWater'
 import type { Release } from '../data/releases'
 
 export interface CarouselHandle {
@@ -299,6 +302,7 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
     <motion.section ref={track} className="scroll-story" data-last-scene={lastScene} style={{ height: trackHeight }} aria-label="Inicio y proyectos musicales">
       <div ref={stage} className={`story-stage${dragging ? ' is-dragging' : ''}`} tabIndex={0} aria-label="Explorar inicio y proyectos" aria-describedby={helpId}>
         <motion.section className="home-intro story-home" style={{ y: homeY, scale: homeScale, opacity: homeOpacity, pointerEvents: homePointerEvents }} aria-hidden={!isHome} aria-labelledby="home-title">
+          <HomeAboutWater active={isHome} opacity={homeDetailOpacity} />
           <div className="home-hero">
             <motion.p className="home-discipline" style={{ opacity: homeDetailOpacity }}>MÚSICA INDEPENDIENTE</motion.p>
             <h1 id="home-title">diego<span className="home-surname">suarez<span className="name-dot">.</span></span></h1>
@@ -306,6 +310,7 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
             <motion.div className="home-socials-reveal" style={{ opacity: homeDetailOpacity }}><HomeSocials active={isHome} /></motion.div>
           </div>
           <motion.div className="home-footer" style={{ opacity: homeDetailOpacity }}>
+            {/* Previous idea: <HomeAbout active={isHome} /> */}
             <span className="home-copyright">© {new Date().getFullYear()} Diego Suarez</span>
           </motion.div>
         </motion.section>

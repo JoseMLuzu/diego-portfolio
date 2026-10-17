@@ -32,6 +32,49 @@ const fillMessage = async page => {
   await page.getByRole('textbox', { name: 'Mensaje', exact: true }).fill('Propuesta de colaboración con un demo.')
 }
 
+test('about water reveals locally at the sides, follows the cursor and hides at the center', async () => {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 960 } })
+  await page.goto(`${base}/#/`)
+  assert.equal(await page.locator('.home-about').count(), 0, 'Archived popover must not render')
+  const field = page.locator('.about-water')
+  assert.equal(await field.evaluate(el => Number(getComputedStyle(el).opacity)), 0)
+  await page.mouse.move(155, 410)
+  await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('.about-water')).opacity) > 0.95)
+  await page.waitForFunction(() => Math.abs(Number(document.querySelector('.about-water ellipse:last-child').getAttribute('cx')) - 155) < 2)
+  const leftX = await field.locator('ellipse').last().getAttribute('cx')
+  await page.mouse.move(1280, 600)
+  await page.waitForFunction(() => Math.abs(Number(document.querySelector('.about-water ellipse:last-child').getAttribute('cx')) - 1280) < 2)
+  assert.ok(Number(await field.locator('ellipse').last().getAttribute('cx')) > Number(leftX) + 1000)
+  await page.mouse.move(720, 400)
+  await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('.about-water')).opacity) < 0.01)
+  assert.equal(await page.getByRole('button', { name: /Sobre mí/ }).count(), 0)
+  await page.getByRole('link', { name: 'Proyectos', exact: true }).click()
+  await page.waitForFunction(() => document.querySelector('.gallery').getAttribute('aria-hidden') === 'false')
+  assert.equal(await field.evaluate(el => Number(getComputedStyle(el).opacity)), 0)
+  await page.close()
+})
+
+test('about water supports touch, compact screens and reduced motion without moving the carousel', async () => {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, reducedMotion: 'reduce' })
+  for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }, { width: 844, height: 390 }]) {
+    await page.setViewportSize(viewport)
+    await page.goto(`${base}/#/`)
+    await page.reload()
+    const field = page.locator('.about-water')
+    await page.touchscreen.tap(12, 160)
+    await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('.about-water')).opacity) > 0.95)
+    assert.equal(await field.locator('ellipse').last().getAttribute('cx'), '12')
+    assert.equal(await field.locator('.about-water-copy').getAttribute('filter'), null)
+    await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('.about-water')).opacity) < 0.01)
+    const box = await field.boundingBox()
+    assert.ok(box.x >= 0 && box.y >= 64 && box.x + box.width <= viewport.width && box.y + box.height <= viewport.height)
+    assert.equal(await page.evaluate(() => scrollY), 0, 'Revealing the biography must not move the carousel')
+    assert.equal(await page.getByRole('button', { name: /Sobre mí/ }).count(), 0)
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
+  }
+  await page.close()
+})
+
 test('contact selects, removes, drops and uploads real attachments with the message', async () => {
   const page = await open()
   const input = page.locator('input[type="file"]')
