@@ -16,7 +16,7 @@ const pageTitles: Record<Page, string> = { home: 'Diego Suarez — Música', pro
 
 export default function App() {
   const [page, setPage] = useState(currentPage)
-  const [visibleSection, setVisibleSection] = useState<'home' | 'projects'>('home')
+  const [visibleSection, setVisibleSection] = useState<'home' | 'projects' | 'outro'>('home')
   const main = useRef<HTMLElement>(null)
   const story = useRef<CarouselHandle>(null)
   const previousPage = useRef<Page | null>(null)
@@ -63,15 +63,12 @@ export default function App() {
         <nav className="site-nav" aria-label="Navegación principal">
           <a href="#/" onClick={event => navigate(event, 'home')} aria-current={!isContact && visibleSection === 'home' ? 'page' : undefined}>Inicio</a>
           <a href="#/proyectos" onClick={event => navigate(event, 'projects')} aria-current={!isContact && visibleSection === 'projects' ? 'location' : undefined}>Proyectos</a>
-          <a href="#/contacto" onClick={event => navigate(event, 'contact')} aria-current={isContact ? 'page' : undefined}>Contacto</a>
+          <a href="#/contacto" onClick={event => navigate(event, 'contact')} aria-current={isContact ? 'page' : visibleSection === 'outro' ? 'location' : undefined}>Contacto</a>
         </nav>
       </header>
       <main ref={main} tabIndex={-1} className={isContact ? 'contact-page' : 'home'}>
         {isContact ? <Contact /> : (
-          <>
-            <VerticalCarousel ref={story} images={releases} onSceneChange={scene => setVisibleSection(scene === 0 ? 'home' : 'projects')} />
-            <footer className="projects-outro"><a href="#/contacto">Hablemos de tu próximo proyecto <span aria-hidden="true">↗</span></a></footer>
-          </>
+          <VerticalCarousel ref={story} images={releases} onSceneChange={scene => setVisibleSection(scene === 0 ? 'home' : scene > releases.length ? 'outro' : 'projects')} />
         )}
       </main>
     </>

@@ -219,7 +219,19 @@ main:focus, .projects-section:focus { outline: none; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
 
+/* The invitation is the last scene on the shared scroll timeline. */
+.story-outro { position: absolute; inset: 0; height: 100%; z-index: 1000; display: flex; flex-direction: column; transform-origin: 50% 50%; will-change: transform, opacity; }
+.outro-content { flex: 1; min-height: 0; padding: 24px var(--gutter); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+.outro-content h2 { font-size: clamp(39px, 7.7vw, 110px); font-weight: 450; letter-spacing: -.065em; line-height: 1.03; margin: 0; max-width: 100%; }
+.outro-content h2 a { display: block; padding: 12px 4px; }
+.outro-content h2 a > span { display: block; }
+.outro-arrow { display: inline-block; margin-left: .15em; color: #e15c3b; }
+.outro-description { font-size: 14px; color: #a5a19b; line-height: 1.5; margin: 22px 0 0; }
+.outro-back { min-height: 44px; border: 0; padding: 10px 0; background: transparent; display: inline-flex; align-items: center; gap: 10px; font-size: 12px; color: #b8b3ac; }
+.outro-back > span { font-size: 20px; color: #e15c3b; }
 @media (max-width: 959px) and (max-height: 500px) and (orientation: landscape) {
+  .outro-content { padding-block: 10px; }
+  .outro-content h2 { font-size: clamp(32px, 6vw, 56px); }
+  .outro-content .home-discipline { margin-bottom: 6px; }
+  .outro-description { margin-top: 6px; }
 }
-.projects-outro { min-height: 120px; display: flex; align-items: center; justify-content: center; padding: 24px var(--gutter); }
-.projects-outro a { display: inline-flex; align-items: center; gap: 24px; min-height: 48px; font-size: 14px; color: #d0c7bd; }

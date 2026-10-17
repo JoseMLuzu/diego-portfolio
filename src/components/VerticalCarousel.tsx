@@ -37,7 +37,7 @@ function CarouselImage({ image, index, position, width, config, active, select }
 }
 
 export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function VerticalCarousel({ images, config: overrides, onSceneChange }, ref) {
-  const lastScene = images.length
+  const lastScene = images.length + 1
   const config = useMemo(() => ({ ...CAROUSEL_DEFAULTS, ...overrides }), [overrides])
   const track = useRef<HTMLElement>(null)
   const stage = useRef<HTMLDivElement>(null)
@@ -61,7 +61,8 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
   const sceneRef = useRef(0)
   const helpId = useId()
   const isHome = scene === 0
-  const isProject = !isHome
+  const isOutro = scene === lastScene
+  const isProject = !isHome && !isOutro
   const projectNumber = clamp(scene, 1, images.length)
   const release = images[projectNumber - 1]
 
@@ -82,10 +83,18 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
   const homeOpacity = useTransform(visualPosition, [0, 1.4, 2.4], [1, 1, 0])
   const homeDetailOpacity = useTransform(visualPosition, [0, 0.32, 0.55], [1, 0.2, 0])
   const homePointerEvents = useTransform(position, value => value < 0.5 ? 'auto' as const : 'none' as const)
-  const galleryOpacity = useTransform(visualPosition, [0, 0.12, 0.75, 1], [0, 0, 0.9, 1])
-  const galleryPointerEvents = useTransform(position, value => value >= 0.5 ? 'auto' as const : 'none' as const)
-  const galleryZ = useTransform(position, value => value >= 0.5 ? 1100 : 800)
-  const captionOpacity = useTransform(visualPosition, [0.35, 0.85], [0, 1])
+  const galleryIntroOpacity = useTransform(visualPosition, [0, 0.12, 0.75, 1], [0, 0, 0.9, 1])
+  const outroDistance = useTransform(visualPosition, value => lastScene - value)
+  const galleryOpacity = useTransform(() => galleryIntroOpacity.get() * (0.18 + 0.82 * Math.min(1, outroDistance.get())))
+  const galleryPointerEvents = useTransform(position, value => value >= 0.5 && value < lastScene - 0.5 ? 'auto' as const : 'none' as const)
+  const galleryZ = useTransform(position, value => value >= 0.5 && value < lastScene - 0.5 ? 1100 : 800)
+  const captionIntroOpacity = useTransform(visualPosition, [0.35, 0.85], [0, 1])
+  const captionOpacity = useTransform(() => captionIntroOpacity.get() * clamp((outroDistance.get() - 0.45) / 0.4, 0, 1))
+  const outroY = useTransform(() => imageGeometry(outroDistance.get(), imageWidth.get(), config).y - Math.min(outroDistance.get(), 1) * (frameHeight.get() - (carousel.current?.clientHeight ?? frameHeight.get())) / 2)
+  const outroScale = useTransform(outroDistance, value => 0.14 + 0.86 * Math.exp(-config.falloff * value * value))
+  const outroOpacity = useTransform(outroDistance, [0, 1.4, 2.4], [1, 1, 0])
+  const outroDetailOpacity = useTransform(outroDistance, [0, 0.32, 0.55], [1, 0.2, 0])
+  const outroPointerEvents = useTransform(position, value => value >= lastScene - 0.5 ? 'auto' as const : 'none' as const)
 
   useImperativeHandle(ref, () => ({ scrollToScene: (index, behavior = 'smooth') => goToRef.current(index, behavior) }), [])
 
@@ -299,7 +308,7 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
   }, [config, frameHeight, imageWidth, lastScene, reducedMotion, start, step])
 
   return (
-    <motion.section ref={track} className="scroll-story" data-last-scene={lastScene} style={{ height: trackHeight }} aria-label="Inicio y proyectos musicales">
+    <motion.section ref={track} className="scroll-story" data-last-scene={lastScene} style={{ height: trackHeight }} aria-label="Inicio, proyectos y colaboración">
       <div ref={stage} className={`story-stage${dragging ? ' is-dragging' : ''}`} tabIndex={0} aria-label="Explorar inicio y proyectos" aria-describedby={helpId}>
         <motion.section className="home-intro story-home" style={{ y: homeY, scale: homeScale, opacity: homeOpacity, pointerEvents: homePointerEvents }} aria-hidden={!isHome} aria-labelledby="home-title">
           <HomeAboutWater active={isHome} opacity={homeDetailOpacity} />
@@ -321,7 +330,18 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
             <motion.div className="position-rail" style={{ opacity: captionOpacity }} aria-label="Seleccionar lanzamiento">{images.map((image, index) => <button key={image.id} tabIndex={isProject ? 0 : -1} className={scene === index + 1 ? 'is-active' : ''} aria-label={`Ir a lanzamiento ${index + 1}: ${image.title}`} aria-current={scene === index + 1 ? 'true' : undefined} onClick={() => goToRef.current(index + 1)}><span /></button>)}</motion.div>
           </div>
           <motion.div className="release-caption" style={{ opacity: captionOpacity }} aria-live="polite" aria-atomic="true"><span className="release-artist">{release?.artist}</span><h2>{release?.title}</h2><p>{release?.format} <span>·</span> {release?.year}</p>{release?.listenUrl && <a className="listen-link" tabIndex={isProject ? 0 : -1} href={release.listenUrl} target="_blank" rel="noreferrer">Escuchar <span aria-hidden="true">↗</span></a>}</motion.div>
-          <motion.div className="gallery-bottom" style={{ opacity: captionOpacity }}><p id={helpId}><span className="scroll-symbol" aria-hidden="true">↕</span> Desliza para explorar <span className="keyboard-help">· ↑ ↓</span></p><div className="gallery-controls"><button tabIndex={isProject ? 0 : -1} aria-label={scene <= 1 ? 'Volver al inicio' : 'Lanzamiento anterior'} onClick={() => relativeRef.current(-1)}>↑</button><span aria-hidden="true">{String(projectNumber).padStart(2, '0')} / {String(images.length).padStart(2, '0')}</span><button tabIndex={isProject ? 0 : -1} aria-label="Lanzamiento siguiente" disabled={scene === images.length} onClick={() => relativeRef.current(1)}>↓</button></div></motion.div>
+          <motion.div className="gallery-bottom" style={{ opacity: captionOpacity }}><p id={helpId}><span className="scroll-symbol" aria-hidden="true">↕</span> Desliza para explorar <span className="keyboard-help">· ↑ ↓</span></p><div className="gallery-controls"><button tabIndex={isProject ? 0 : -1} aria-label={scene <= 1 ? 'Volver al inicio' : 'Lanzamiento anterior'} onClick={() => relativeRef.current(-1)}>↑</button><span aria-hidden="true">{String(projectNumber).padStart(2, '0')} / {String(images.length).padStart(2, '0')}</span><button tabIndex={isProject ? 0 : -1} aria-label={scene === images.length ? 'Ver invitación de contacto' : 'Lanzamiento siguiente'} onClick={() => relativeRef.current(1)}>↓</button></div></motion.div>
+        </motion.section>
+        <motion.section className="story-outro" style={{ y: outroY, scale: outroScale, opacity: outroOpacity, pointerEvents: outroPointerEvents }} aria-hidden={!isOutro} aria-labelledby="outro-title">
+          <div className="outro-content">
+            <motion.p className="home-discipline" style={{ opacity: outroDetailOpacity }}>HAGAMOS MÚSICA</motion.p>
+            <h2 id="outro-title"><a href="#/contacto" tabIndex={isOutro ? 0 : -1} aria-label="Hablemos de tu próximo proyecto">Hablemos de tu<span>próximo proyecto<span className="outro-arrow" aria-hidden="true">↗</span></span></a></h2>
+            <motion.p className="outro-description" style={{ opacity: outroDetailOpacity }}>Cuéntame lo que tienes en mente.</motion.p>
+          </div>
+          <motion.div className="home-footer" style={{ opacity: outroDetailOpacity }}>
+            <button className="outro-back" type="button" data-story-interactive="true" tabIndex={isOutro ? 0 : -1} onClick={() => relativeRef.current(-1)}><span aria-hidden="true">↑</span> Volver a proyectos</button>
+            <span>© {new Date().getFullYear()} Diego Suarez</span>
+          </motion.div>
         </motion.section>
       </div>
     </motion.section>
