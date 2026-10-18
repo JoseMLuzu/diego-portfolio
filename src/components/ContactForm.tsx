@@ -1,3 +1,4 @@
+import { ArrowIcon } from './ArrowIcon'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent, DragEvent } from 'react'
 import { ATTACHMENT_ACCEPT, formatFileSize, mergeAttachments } from '../lib/attachments'
@@ -88,7 +89,7 @@ export function ContactForm() {
         <p className="file-limits" id={`${id}-limits`}>Audio, imágenes, PDF o ZIP · 25 MB por archivo · 50 MB en total</p>
         {fileErrors.length > 0 && <ul className="form-errors" role="alert">{fileErrors.map(message => <li key={message}>{message}</li>)}</ul>}
         {files.length > 0 && <ul className="attachment-list" aria-label="Archivos adjuntos">{files.map((file, index) => <li key={`${file.name}-${file.size}-${file.lastModified}`}><span className="attachment-name">{file.name}</span><span className="attachment-size">{formatFileSize(file.size)}</span><button type="button" aria-label={`Quitar ${file.name}`} onClick={() => { setFiles(current => current.filter((_, i) => i !== index)); setFileErrors([]) }}>×</button></li>)}</ul>}
-        <div className="contact-submit"><span>{files.length > 0 ? `${files.length} ${files.length === 1 ? 'archivo adjunto' : 'archivos adjuntos'} · ${formatFileSize(files.reduce((sum, file) => sum + file.size, 0))}` : 'Tu próximo proyecto empieza aquí.'}</span><button className="send-button" type="submit">{busy ? 'Enviando…' : 'Enviar mensaje'}<span aria-hidden="true">↗</span></button></div>
+        <div className="contact-submit"><span>{files.length > 0 ? `${files.length} ${files.length === 1 ? 'archivo adjunto' : 'archivos adjuntos'} · ${formatFileSize(files.reduce((sum, file) => sum + file.size, 0))}` : 'Tu próximo proyecto empieza aquí.'}</span><button className="send-button" type="submit">{busy ? 'Enviando…' : 'Enviar mensaje'}<span aria-hidden="true"><ArrowIcon /></span></button></div>
       </fieldset>
       {status === 'sent' && <p className="form-feedback is-success" ref={feedback} tabIndex={-1} role="status">Mensaje recibido. Gracias por escribir.</p>}
       {status === 'error' && <p className="form-feedback is-error" ref={feedback} tabIndex={-1} role="alert">{error}</p>}

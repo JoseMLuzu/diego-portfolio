@@ -4,6 +4,7 @@ import type { MotionValue } from 'motion/react'
 import { CAROUSEL_DEFAULTS, SCROLL_STORY_DEFAULTS, clamp, gestureTarget, imageGeometry } from './carouselMath'
 import type { CarouselConfig } from './carouselMath'
 import { HomeSocials } from './HomeSocials'
+import { ArrowIcon } from './ArrowIcon'
 // Previous popover idea, preserved in HomeAbout.tsx:
 // import { HomeAbout } from './HomeAbout'
 import { HomeAboutWater } from './HomeAboutWater'
@@ -315,7 +316,7 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
           <div className="home-hero">
             <motion.p className="home-discipline" style={{ opacity: homeDetailOpacity }}>MÚSICA INDEPENDIENTE</motion.p>
             <h1 id="home-title">diego<span className="home-surname">suarez<span className="name-dot">.</span></span></h1>
-            <motion.a className="projects-link" href="#/proyectos" style={{ opacity: homeDetailOpacity }} tabIndex={isHome ? 0 : -1} onClick={event => { if (window.location.hash === '#/proyectos') { event.preventDefault(); goToRef.current(1) } }}>Explorar proyectos <span className="project-count">{String(images.length).padStart(2, '0')}</span><span className="link-arrow" aria-hidden="true">↗</span></motion.a>
+            <motion.a className="projects-link" href="#/proyectos" style={{ opacity: homeDetailOpacity }} tabIndex={isHome ? 0 : -1} onClick={event => { if (window.location.hash === '#/proyectos') { event.preventDefault(); goToRef.current(1) } }}>Explorar proyectos <span className="project-count">{String(images.length).padStart(2, '0')}</span><span className="link-arrow" aria-hidden="true"><ArrowIcon /></span></motion.a>
             <motion.div className="home-socials-reveal" style={{ opacity: homeDetailOpacity }}><HomeSocials active={isHome} /></motion.div>
           </div>
           <motion.div className="home-footer" style={{ opacity: homeDetailOpacity }}>
@@ -329,17 +330,17 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
             <motion.div className="release-counter" style={{ opacity: captionOpacity }} aria-hidden="true"><span className="eyebrow">PROYECTOS</span><span className="caption-index">{String(projectNumber).padStart(2, '0')} <span>/ {String(images.length).padStart(2, '0')}</span></span></motion.div>
             <motion.div className="position-rail" style={{ opacity: captionOpacity }} aria-label="Seleccionar lanzamiento">{images.map((image, index) => <button key={image.id} tabIndex={isProject ? 0 : -1} className={scene === index + 1 ? 'is-active' : ''} aria-label={`Ir a lanzamiento ${index + 1}: ${image.title}`} aria-current={scene === index + 1 ? 'true' : undefined} onClick={() => goToRef.current(index + 1)}><span /></button>)}</motion.div>
           </div>
-          <motion.div className="release-caption" style={{ opacity: captionOpacity }} aria-live="polite" aria-atomic="true"><span className="release-artist">{release?.artist}</span><h2>{release?.title}</h2><p>{release?.format} <span>·</span> {release?.year}</p>{release?.listenUrl && <a className="listen-link" tabIndex={isProject ? 0 : -1} href={release.listenUrl} target="_blank" rel="noreferrer">Escuchar <span aria-hidden="true">↗</span></a>}</motion.div>
-          <motion.div className="gallery-bottom" style={{ opacity: captionOpacity }}><p id={helpId}><span className="scroll-symbol" aria-hidden="true">↕</span> Desliza para explorar <span className="keyboard-help">· ↑ ↓</span></p><div className="gallery-controls"><button tabIndex={isProject ? 0 : -1} aria-label={scene <= 1 ? 'Volver al inicio' : 'Lanzamiento anterior'} onClick={() => relativeRef.current(-1)}>↑</button><span aria-hidden="true">{String(projectNumber).padStart(2, '0')} / {String(images.length).padStart(2, '0')}</span><button tabIndex={isProject ? 0 : -1} aria-label={scene === images.length ? 'Ver invitación de contacto' : 'Lanzamiento siguiente'} onClick={() => relativeRef.current(1)}>↓</button></div></motion.div>
+          <motion.div className="release-caption" style={{ opacity: captionOpacity }} aria-live="polite" aria-atomic="true"><span className="release-artist">{release?.artist}</span><h2>{release?.title}</h2><p>{release?.format} <span>·</span> {release?.year}</p>{release?.listenUrl && <a className="listen-link" tabIndex={isProject ? 0 : -1} href={release.listenUrl} target="_blank" rel="noreferrer">Escuchar <span aria-hidden="true"><ArrowIcon /></span></a>}</motion.div>
+          <motion.div className="gallery-bottom" style={{ opacity: captionOpacity }}><p id={helpId}><span className="scroll-symbol" aria-hidden="true"><ArrowIcon direction="vertical" /></span> Desliza para explorar <span className="keyboard-help" aria-hidden="true">· <ArrowIcon direction="up" /> <ArrowIcon direction="down" /></span></p><div className="gallery-controls"><button tabIndex={isProject ? 0 : -1} aria-label={scene <= 1 ? 'Volver al inicio' : 'Lanzamiento anterior'} onClick={() => relativeRef.current(-1)}><ArrowIcon direction="up" /></button><span aria-hidden="true">{String(projectNumber).padStart(2, '0')} / {String(images.length).padStart(2, '0')}</span><button tabIndex={isProject ? 0 : -1} aria-label={scene === images.length ? 'Ver invitación de contacto' : 'Lanzamiento siguiente'} onClick={() => relativeRef.current(1)}><ArrowIcon direction="down" /></button></div></motion.div>
         </motion.section>
         <motion.section className="story-outro" style={{ y: outroY, scale: outroScale, opacity: outroOpacity, pointerEvents: outroPointerEvents }} aria-hidden={!isOutro} aria-labelledby="outro-title">
           <div className="outro-content">
             <motion.p className="home-discipline" style={{ opacity: outroDetailOpacity }}>HAGAMOS MÚSICA</motion.p>
-            <h2 id="outro-title"><a href="#/contacto" tabIndex={isOutro ? 0 : -1} aria-label="Hablemos de tu próximo proyecto">Hablemos de tu<span>próximo proyecto<span className="outro-arrow" aria-hidden="true">↗</span></span></a></h2>
+            <h2 id="outro-title"><a href="#/contacto" tabIndex={isOutro ? 0 : -1} aria-label="Hablemos de tu próximo proyecto">Hablemos de tu<span>próximo proyecto<span className="outro-arrow" aria-hidden="true"><ArrowIcon /></span></span></a></h2>
             <motion.p className="outro-description" style={{ opacity: outroDetailOpacity }}>Cuéntame lo que tienes en mente.</motion.p>
           </div>
           <motion.div className="home-footer" style={{ opacity: outroDetailOpacity }}>
-            <button className="outro-back" type="button" data-story-interactive="true" tabIndex={isOutro ? 0 : -1} onClick={() => relativeRef.current(-1)}><span aria-hidden="true">↑</span> Volver a proyectos</button>
+            <button className="outro-back" type="button" data-story-interactive="true" tabIndex={isOutro ? 0 : -1} onClick={() => relativeRef.current(-1)}><span aria-hidden="true"><ArrowIcon direction="up" /></span> Volver a proyectos</button>
             <span>© {new Date().getFullYear()} Diego Suarez</span>
           </motion.div>
         </motion.section>
