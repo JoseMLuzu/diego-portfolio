@@ -39,6 +39,7 @@ export const SCROLL_STORY_DEFAULTS = {
   wheelGestureIdleMs: 220,
   wheelThreshold: 10,
   swipeThreshold: 12,
+  touchClickGuardMs: 450,
 } as const
 
 /** A completed gesture can only settle on its origin or an adjacent scene. */

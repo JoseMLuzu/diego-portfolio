@@ -25,14 +25,15 @@ function CarouselImage({ image, index, position, width, config, active, select }
 }) {
   const geometry = useTransform(() => imageGeometry(index + 1 - position.get(), width.get(), config))
   const y = useTransform(geometry, value => value.y)
-  const scale = useTransform(geometry, value => value.scale)
   const zIndex = useTransform(geometry, value => value.zIndex)
-  const hitWidth = useTransform(() => Math.max(44, width.get() * geometry.get().scale))
-  const hitHeight = useTransform(() => Math.max(44, width.get() / config.aspectRatio * geometry.get().scale))
   const imageHeight = useTransform(width, value => value / config.aspectRatio)
+  // Scale the fixed-size hit area instead of causing layout on every frame.
+  // Compensate only when the artwork is smaller than the 44px touch target.
+  const hitScale = useTransform(() => Math.max(geometry.get().scale, 44 / width.get(), 44 / imageHeight.get()))
+  const artworkScale = useTransform(() => geometry.get().scale / hitScale.get())
   return (
-    <motion.button className="carousel-image" style={{ y, zIndex, width: hitWidth, height: hitHeight }} tabIndex={-1} aria-label={`Ver ${image.title}`} aria-current={active ? 'true' : undefined} onClick={() => select(index + 1)} data-image-index={index}>
-      <motion.img style={{ width, height: imageHeight, scale }} src={image.src} alt={image.alt} draggable={false} fetchPriority={index === 0 ? 'high' : 'auto'} />
+    <motion.button className="carousel-image" style={{ y, zIndex, scale: hitScale, width, height: imageHeight }} tabIndex={-1} aria-label={`Ver ${image.title}`} aria-current={active ? 'true' : undefined} onClick={() => select(index + 1)} data-image-index={index}>
+      <motion.img style={{ width, height: imageHeight, scale: artworkScale }} src={image.src} alt={image.alt} draggable={false} fetchPriority={index === 0 ? 'high' : 'auto'} />
     </motion.button>
   )
 }
@@ -49,6 +50,7 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
   const onSceneChangeRef = useRef(onSceneChange)
   onSceneChangeRef.current = onSceneChange
   const frameHeight = useMotionValue(760)
+  const carouselHeight = useMotionValue(760)
   const imageWidth = useMotionValue(config.mainWidth)
   const step = useMotionValue<number>(SCROLL_STORY_DEFAULTS.maxStep)
   const start = useMotionValue(0)
@@ -78,7 +80,7 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
 
   const homeY = useTransform(() => {
     const value = visualPosition.get()
-    return imageGeometry(-value, imageWidth.get(), config).y - Math.min(value, 1) * (frameHeight.get() - (carousel.current?.clientHeight ?? frameHeight.get())) / 2
+    return imageGeometry(-value, imageWidth.get(), config).y - Math.min(value, 1) * (frameHeight.get() - carouselHeight.get()) / 2
   })
   const homeScale = useTransform(visualPosition, value => 0.14 + 0.86 * Math.exp(-config.falloff * value * value))
   const homeOpacity = useTransform(visualPosition, [0, 1.4, 2.4], [1, 1, 0])
@@ -91,7 +93,7 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
   const galleryZ = useTransform(position, value => value >= 0.5 && value < lastScene - 0.5 ? 1100 : 800)
   const captionIntroOpacity = useTransform(visualPosition, [0.35, 0.85], [0, 1])
   const captionOpacity = useTransform(() => captionIntroOpacity.get() * clamp((outroDistance.get() - 0.45) / 0.4, 0, 1))
-  const outroY = useTransform(() => imageGeometry(outroDistance.get(), imageWidth.get(), config).y - Math.min(outroDistance.get(), 1) * (frameHeight.get() - (carousel.current?.clientHeight ?? frameHeight.get())) / 2)
+  const outroY = useTransform(() => imageGeometry(outroDistance.get(), imageWidth.get(), config).y - Math.min(outroDistance.get(), 1) * (frameHeight.get() - carouselHeight.get()) / 2)
   const outroScale = useTransform(outroDistance, value => 0.14 + 0.86 * Math.exp(-config.falloff * value * value))
   const outroOpacity = useTransform(outroDistance, [0, 1.4, 2.4], [1, 1, 0])
   const outroDetailOpacity = useTransform(outroDistance, [0, 0.32, 0.55], [1, 0.2, 0])
@@ -113,8 +115,20 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
     let measured = false
     let selectedTarget: number | null = null
     let wheelSession = { direction: 0, time: 0, distance: 0, fired: false }
-    let touchGesture: { id: number; x: number; y: number; startScroll: number; origin: number; distance: number; captured: boolean; native: boolean; axis: 'x' | 'y' | null } | null = null
+    let touchGesture: { id: number; x: number; y: number; startScroll: number; origin: number; resumeTarget: number | null; distance: number; captured: boolean; native: boolean; axis: 'x' | 'y' | null } | null = null
     let drag: { id: number; startY: number; startScroll: number; moved: boolean; origin: number } | null = null
+    const writeScroll = (top: number) => {
+      // Safari truncates fractional scroll writes; round explicitly so both
+      // engines settle on the same nearest CSS pixel after a viewport change.
+      window.scrollTo({ top: Math.round(top), behavior: 'instant' })
+      // Keep the visuals in the same frame as our document scroll writes.
+      scrollY.set(window.scrollY)
+    }
+    const guardClick = (duration: number) => {
+      suppressClick = true
+      clearTimeout(clickTimer)
+      clickTimer = setTimeout(() => { suppressClick = false }, duration)
+    }
     const stop = () => {
       controls.current?.stop()
       controls.current = null
@@ -123,16 +137,17 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
       selectedTarget = null
     }
     const select = (index: number, behavior: ScrollBehavior = 'smooth') => {
+      cancelAnimationFrame(resizeFrame)
       stop()
       const target = start.get() + clamp(Math.round(index), 0, lastScene) * step.get()
       selectedTarget = clamp(Math.round(index), 0, lastScene)
-      if (reducedMotion || behavior !== 'smooth') { window.scrollTo({ top: target, behavior: 'instant' }); return }
+      if (reducedMotion || behavior !== 'smooth') { writeScroll(target); return }
       programmatic = true
       controls.current = animate(window.scrollY, target, {
         type: 'spring', stiffness: config.stiffness, damping: config.damping, mass: config.mass,
         restDelta: 0.5, restSpeed: 1,
-        onUpdate: value => window.scrollTo({ top: value, behavior: 'instant' }),
-        onComplete: () => { window.scrollTo({ top: target, behavior: 'instant' }); programmatic = false; controls.current = null },
+        onUpdate: writeScroll,
+        onComplete: () => { writeScroll(target); programmatic = false; controls.current = null },
       })
     }
     goToRef.current = select
@@ -152,6 +167,7 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
       timer = setTimeout(settleNearest, SCROLL_STORY_DEFAULTS.snapDelayMs)
     }
     const measure = () => {
+      const oldStart = start.get()
       const oldOffset = (window.scrollY - start.get()) / step.get()
       const wasWithin = window.scrollY >= start.get() && oldOffset <= lastScene
       const headerHeight = document.querySelector('.site-header')?.getBoundingClientRect().height ?? 0
@@ -159,12 +175,20 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
       const oldStep = step.get()
       start.set(trackElement.getBoundingClientRect().top + window.scrollY - headerHeight)
       frameHeight.set(element.clientHeight)
+      carouselHeight.set(cards.clientHeight)
       imageWidth.set(Math.min(config.mainWidth, cards.clientWidth * 0.84, cards.clientHeight * 0.64 * config.aspectRatio))
       step.set(nextStep)
-      if (measured && wasWithin && Math.abs(oldStep - nextStep) > 1) {
+      if (measured && wasWithin && (Math.abs(oldStep - nextStep) > 1 || Math.abs(oldStart - start.get()) > 0.5)) {
+        const destination = selectedTarget
         stop()
         cancelAnimationFrame(resizeFrame)
-        resizeFrame = requestAnimationFrame(() => window.scrollTo({ top: start.get() + oldOffset * nextStep, behavior: 'instant' }))
+        resizeFrame = requestAnimationFrame(() => {
+          writeScroll(start.get() + oldOffset * nextStep)
+          if (touchGesture) touchGesture.startScroll = window.scrollY - touchGesture.distance / Math.max(160, imageWidth.get()) * nextStep * config.dragSensitivity
+          else if (drag) drag.startScroll = window.scrollY
+          else if (destination !== null) select(destination)
+          else scheduleSnap()
+        })
       }
       measured = true
     }
@@ -196,15 +220,20 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
       select(gestureTarget(origin, wheelSession.distance, lastScene, SCROLL_STORY_DEFAULTS.wheelThreshold))
     }
     const onTouchStart = (event: TouchEvent) => {
+      if (!element.contains(event.target as Node)) return
+      suppressClick = false
+      clearTimeout(clickTimer)
       touching = true
-      if ((event.target as HTMLElement).closest('[data-story-interactive]')) { touchGesture = null; stop(); return }
+      // A control tap must not erase the destination of an in-flight animation.
+      if ((event.target as HTMLElement).closest('a, .gallery-controls, .position-rail, [data-story-interactive]')) { touchGesture = null; return }
       wheelSession.fired = false
       if (event.touches.length !== 1) { touchGesture = null; setDragging(false); stop(); return }
       const touch = event.touches[0]
       const offset = window.scrollY - start.get()
       const origin = selectedTarget ?? Math.round(offset / step.get())
+      const resumeTarget = selectedTarget
       stop()
-      touchGesture = { id: touch.identifier, x: touch.clientX, y: touch.clientY, startScroll: window.scrollY, origin: clamp(origin, 0, lastScene), distance: 0, captured: false, native: offset < -1 || offset > lastScene * step.get() + 1, axis: null }
+      touchGesture = { id: touch.identifier, x: touch.clientX, y: touch.clientY, startScroll: window.scrollY, origin: clamp(origin, 0, lastScene), resumeTarget, distance: 0, captured: false, native: offset < -1 || offset > lastScene * step.get() + 1, axis: null }
     }
     const onTouchMove = (event: TouchEvent) => {
       if (!touchGesture || event.touches.length !== 1 || touchGesture.native) return
@@ -224,21 +253,27 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
       if (!touchGesture.captured) { touchGesture.captured = true; setDragging(true) }
       touchGesture.distance = distance
       const nextOffset = touchGesture.startScroll + distance / Math.max(160, imageWidth.get()) * step.get() * config.dragSensitivity
-      window.scrollTo({ top: clamp(nextOffset, start.get() + Math.max(0, touchGesture.origin - 1) * step.get(), start.get() + Math.min(lastScene, touchGesture.origin + 1) * step.get()), behavior: 'instant' })
+      writeScroll(clamp(nextOffset, start.get() + Math.max(0, touchGesture.origin - 1) * step.get(), start.get() + Math.min(lastScene, touchGesture.origin + 1) * step.get()))
     }
     const onTouchEnd = (event: TouchEvent) => {
+      if (!touching && !touchGesture) return
       touching = event.touches.length > 0
       if (touching) return
       setDragging(false)
       const gesture = touchGesture
       touchGesture = null
       if (gesture?.captured) {
-        setDragging(false)
-        select(event.type === 'touchcancel' ? Math.round((window.scrollY - start.get()) / step.get()) : gestureTarget(gesture.origin, gesture.distance, lastScene, SCROLL_STORY_DEFAULTS.swipeThreshold))
-      } else scheduleSnap()
+        // Mobile browsers can deliver a delayed click after a swipe. It must not
+        // reselect the thumbnail where the finger originally touched down.
+        guardClick(SCROLL_STORY_DEFAULTS.touchClickGuardMs)
+        select(gestureTarget(gesture.origin, gesture.distance, lastScene, SCROLL_STORY_DEFAULTS.swipeThreshold))
+      } else if (gesture?.resumeTarget !== null && gesture?.resumeTarget !== undefined) select(gesture.resumeTarget)
+      else scheduleSnap()
     }
     const onPointerDown = (event: PointerEvent) => {
       if (event.pointerType !== 'mouse' || event.button !== 0 || (event.target as HTMLElement).closest('a, .gallery-controls, .position-rail, [data-story-interactive]')) return
+      suppressClick = false
+      clearTimeout(clickTimer)
       const origin = selectedTarget ?? Math.round((window.scrollY - start.get()) / step.get())
       stop()
       drag = { origin, id: event.pointerId, startY: event.clientY, startScroll: window.scrollY, moved: false }
@@ -250,7 +285,7 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
       const delta = drag.startY - event.clientY
       if (!drag.moved && Math.abs(delta) < 5) return
       if (!drag.moved) { drag.moved = true; setDragging(true) }
-      window.scrollTo({ top: clamp(drag.startScroll + delta / Math.max(160, imageWidth.get()) * step.get() * config.dragSensitivity, start.get() + Math.max(0, drag.origin - 1) * step.get(), start.get() + Math.min(lastScene, drag.origin + 1) * step.get()), behavior: 'instant' })
+      writeScroll(clamp(drag.startScroll + delta / Math.max(160, imageWidth.get()) * step.get() * config.dragSensitivity, start.get() + Math.max(0, drag.origin - 1) * step.get(), start.get() + Math.min(lastScene, drag.origin + 1) * step.get()))
       event.preventDefault()
     }
     const onPointerUp = (event: PointerEvent) => {
@@ -259,9 +294,7 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
       drag = null
       setDragging(false)
       if (!moved) return
-      suppressClick = true
-      clearTimeout(clickTimer)
-      clickTimer = setTimeout(() => { suppressClick = false }, 0)
+      guardClick(0)
       select(event.type === 'pointerup' ? gestureTarget(origin, startY - event.clientY, lastScene, SCROLL_STORY_DEFAULTS.swipeThreshold) : Math.round((window.scrollY - start.get()) / step.get()))
     }
     const onClick = (event: MouseEvent) => { if (suppressClick) { event.preventDefault(); event.stopPropagation() } }
@@ -306,7 +339,7 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
       element.removeEventListener('click', onClick, true)
       element.removeEventListener('keydown', onKey)
     }
-  }, [config, frameHeight, imageWidth, lastScene, reducedMotion, start, step])
+  }, [carouselHeight, config, frameHeight, imageWidth, lastScene, reducedMotion, scrollY, start, step])
 
   return (
     <motion.section ref={track} className="scroll-story" data-last-scene={lastScene} style={{ height: trackHeight }} aria-label="Inicio, proyectos y colaboración">

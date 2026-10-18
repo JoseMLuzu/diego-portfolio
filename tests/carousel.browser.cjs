@@ -5,7 +5,7 @@ let browser
 const url = process.env.CAROUSEL_URL || 'http://127.0.0.1:5187'
 const settle = page => page.waitForTimeout(1250)
 const active = page => page.locator('.carousel-image[aria-current="true"]').getAttribute('data-image-index').then(Number)
-const scale = (page, index) => page.locator(`[data-image-index="${index}"] img`).evaluate(e => new DOMMatrix(getComputedStyle(e).transform).a)
+const scale = (page, index) => page.locator(`[data-image-index="${index}"] img`).evaluate(e => e.getBoundingClientRect().width / parseFloat(getComputedStyle(e).width))
 const metrics = page => page.evaluate(() => ({ step: (document.querySelector('.scroll-story').getBoundingClientRect().height - document.querySelector('.story-stage').getBoundingClientRect().height) / Number(document.querySelector('.scroll-story').dataset.lastScene), y: scrollY }))
 async function open(options = {}, route = '') {
   const page = await browser.newPage({ viewport: { width: 1440, height: 960 }, ...options })

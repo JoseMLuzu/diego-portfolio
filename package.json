@@ -9,6 +9,7 @@
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --import tsx --test tests/*.test.ts",
     "test:browser": "node --test tests/carousel.browser.cjs",
+    "test:mobile": "node --test tests/carousel.mobile.browser.cjs",
     "start": "node server/index.mjs",
     "dev:api": "node server/index.mjs",
     "test:contact": "node --test tests/contact.server.test.mjs",

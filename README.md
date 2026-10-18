@@ -33,6 +33,7 @@ All default values are in `src/components/carouselMath.ts`. You can also overrid
 | `dragSensitivity` | Sensitivity of the transition preview during mouse or touch dragging. |
 | `SCROLL_STORY_DEFAULTS.snapDelayMs` | Delay before snapping to the nearest scene after moving the scrollbar. |
 | `SCROLL_STORY_DEFAULTS.swipeThreshold` | Minimum gesture distance needed to complete a move to the next or previous scene. |
+| `SCROLL_STORY_DEFAULTS.touchClickGuardMs` | Interval for suppressing delayed compatibility clicks after a swipe; a new intentional touch clears it. |
 | `SCROLL_STORY_DEFAULTS.wheelThreshold`, `wheelGestureIdleMs` | Wheel threshold and idle interval separating trackpad gestures; momentum from the same burst does not trigger extra steps. |
 | `SCROLL_STORY_DEFAULTS.stepRatio`, `minStep`, `maxStep` | Scroll distance per scene, proportional to the available height and constrained by pixel limits. |
 | `stiffness`, `damping`, `mass` | Spring response for snapping and navigation. More damping reduces bounce. |
@@ -55,11 +56,16 @@ npm test
 # With the development server running:
 npx playwright install chromium
 CAROUSEL_URL=http://127.0.0.1:5173 npm run test:browser
+CAROUSEL_URL=http://127.0.0.1:5173 npm run test:mobile
 ```
 
 The first scene contains the artist's name, a short label, and a link to projects. Scrolling turns the home itself into part of the carousel. Opening Contact unmounts the sequence and cleans up its listeners. Navigation supports direct links and browser Back/Forward. The menu follows the active scene.
 
 Tests cover the transition from the home, intermediate positions before the selected index changes, final snapping, direction reversal, wheel/trackpad input, mouse dragging, touch gestures, thumbnails, keyboard input, boundaries, reduced motion, and the final contact invitation. Mobile tests also cover the attachment form. Emulation does not replace testing on a physical phone.
+
+Mobile carousel regression tests check incidental touches during snapping, repeated arrow taps, cancelled swipes, delayed compatibility clicks, and viewport changes during navigation. Chromium performance counters check that a swipe does not cause layout on every animation frame. Covers and their touch targets scale through transforms; dimensions only change on resize, and measured stage heights are cached outside animation frames. Navigation arrows use inline SVG paths to avoid platform-specific emoji rendering.
+
+After installing WebKit with `npx playwright install webkit`, set `MOBILE_BROWSER=webkit` to run the touch and resize regressions in that engine. Native swipe cancellation, delayed-click injection, and performance counters use Chromium's DevTools Protocol and are skipped in the WebKit run.
 
 Reference: a local video supplied by the user. Frames were extracted to compare proportions, vertical alignment, and spacing.
 
