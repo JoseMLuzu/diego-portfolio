@@ -22,7 +22,7 @@ Images use `object-fit: cover`: they retain their proportions and are cropped to
 
 ## Tuning the motion
 
-The default feel is a quick, firm snap: a stiffer spring with lower mass settles each scene promptly, while slightly higher drag sensitivity and lower input thresholds make short gestures responsive. A 150 ms idle interval separates wheel gestures while still grouping trackpad momentum into one scene change.
+The default feel is a quick, firm snap: a stiffer spring with lower mass settles each scene promptly, while slightly higher drag sensitivity and lower input thresholds make short gestures responsive. A 150 ms idle interval identifies a fresh wheel gesture; sustained input can continue through adjacent scenes without waiting for that interval.
 
 All default values are in `src/components/carouselMath.ts`. You can also override them through `config`:
 
@@ -36,7 +36,8 @@ All default values are in `src/components/carouselMath.ts`. You can also overrid
 | `SCROLL_STORY_DEFAULTS.snapDelayMs` | Delay before snapping to the nearest scene after moving the scrollbar. |
 | `SCROLL_STORY_DEFAULTS.swipeThreshold` | Minimum gesture distance needed to complete a move to the next or previous scene. |
 | `SCROLL_STORY_DEFAULTS.touchClickGuardMs` | Interval for suppressing delayed compatibility clicks after a swipe; a new intentional touch clears it. |
-| `SCROLL_STORY_DEFAULTS.wheelThreshold`, `wheelGestureIdleMs` | Wheel threshold and idle interval separating trackpad gestures; momentum from the same burst does not trigger extra steps. |
+| `SCROLL_STORY_DEFAULTS.wheelThreshold`, `wheelGestureIdleMs` | Initial wheel threshold and idle interval identifying a fresh gesture. Continued scrolling does not have to wait for this interval. |
+| `SCROLL_STORY_DEFAULTS.wheelRepeatDistance`, `wheelRepeatIntervalMs` | Additional scroll distance and minimum time between adjacent steps during sustained wheel or trackpad input. |
 | `SCROLL_STORY_DEFAULTS.stepRatio`, `minStep`, `maxStep` | Scroll distance per scene, proportional to the available height and constrained by pixel limits. |
 | `stiffness`, `damping`, `mass` | Spring response for snapping and navigation. More damping reduces bounce. |
 
@@ -44,7 +45,7 @@ Document scrolling is the source of truth. `useScroll` provides a Motion Value, 
 
 The distance `scene index - position` determines vertical displacement, scale, and stacking order. The home typography follows the same timeline and becomes a thumbnail above the first cover. Supporting text fades progressively as covers enter from below. Motion Values update the DOM directly; React only updates the scene index when the scene changes and the dragging state when a mouse or touch drag starts or ends.
 
-Each wheel or trackpad gesture advances exactly one scene in its direction. Momentum events from the same burst are grouped, and reversing direction can smoothly change the destination. Mouse dragging or touch swiping previews the continuous transition; releasing completes the move to the next or previous scene, even if the gesture did not reach the halfway point. Accidental movements below the threshold return to the starting scene. The exact destination is applied when the animation ends, preventing intermediate resting positions.
+Wheel and trackpad input advance through adjacent scenes. Sustained scrolling can request the next scene before the previous snap finishes, retaining forward velocity instead of waiting for an idle pause. A repeat distance and cadence filter small fading momentum tails. Reversing direction changes the destination immediately without carrying velocity in the old direction. Mouse dragging or touch swiping previews the continuous transition; releasing completes the move to the next or previous scene, even if the gesture did not reach the halfway point. Accidental movements below the threshold return to the starting scene. The exact destination is applied when the animation ends, preventing intermediate resting positions.
 
 Every control moves the same document position. The scrollbar also snaps to a valid scene when it stops, including with reduced motion enabled. Zoom and horizontal gestures remain available. Outward scrolling at the sequence boundaries is left to the browser. Rotating the phone preserves the timeline position while dimensions are recalculated.
 

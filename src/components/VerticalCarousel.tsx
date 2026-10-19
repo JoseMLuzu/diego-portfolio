@@ -114,7 +114,7 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
     let suppressClick = false
     let measured = false
     let selectedTarget: number | null = null
-    let wheelSession = { direction: 0, time: 0, distance: 0, fired: false }
+    let wheelSession = { direction: 0, time: 0, distance: 0, fired: false, lastStepTime: 0 }
     let touchGesture: { id: number; x: number; y: number; startScroll: number; origin: number; resumeTarget: number | null; distance: number; captured: boolean; native: boolean; axis: 'x' | 'y' | null } | null = null
     let drag: { id: number; startY: number; startScroll: number; moved: boolean; origin: number } | null = null
     const writeScroll = (top: number) => {
@@ -137,15 +137,21 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
       selectedTarget = null
     }
     const select = (index: number, behavior: ScrollBehavior = 'smooth') => {
+      const currentVelocity = scrollY.getVelocity()
       cancelAnimationFrame(resizeFrame)
       resizeFrame = 0
       stop()
       const target = start.get() + clamp(Math.round(index), 0, lastScene) * step.get()
       selectedTarget = clamp(Math.round(index), 0, lastScene)
       if (reducedMotion || behavior !== 'smooth') { writeScroll(target); return }
+      const distance = target - window.scrollY
+      const velocity = Math.sign(currentVelocity) === Math.sign(distance)
+        ? Math.sign(distance) * Math.min(Math.abs(currentVelocity), Math.abs(distance) * Math.sqrt(config.stiffness / config.mass))
+        : 0
       programmatic = true
       controls.current = animate(window.scrollY, target, {
         type: 'spring', stiffness: config.stiffness, damping: config.damping, mass: config.mass,
+        velocity,
         restDelta: 0.5, restSpeed: 1,
         onUpdate: writeScroll,
         onComplete: () => { writeScroll(target); programmatic = false; controls.current = null },
@@ -215,17 +221,22 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
       event.preventDefault()
       const now = performance.now()
       if (now - wheelSession.time > SCROLL_STORY_DEFAULTS.wheelGestureIdleMs || direction !== wheelSession.direction) {
-        wheelSession = { direction, time: now, distance: 0, fired: false }
+        wheelSession = { direction, time: now, distance: 0, fired: false, lastStepTime: 0 }
       }
       wheelSession.time = now
-      // Trackpad momentum belongs to the original gesture, not to extra steps.
-      if (wheelSession.fired) return
       const pixels = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? frameHeight.get() : 1)
       wheelSession.distance += pixels
-      if (Math.abs(wheelSession.distance) < SCROLL_STORY_DEFAULTS.wheelThreshold) return
+      // Sustained input can request another adjacent scene before the previous
+      // snap finishes. Small momentum tails stay below the repeat budget.
+      const threshold = wheelSession.fired ? SCROLL_STORY_DEFAULTS.wheelRepeatDistance : SCROLL_STORY_DEFAULTS.wheelThreshold
+      if (Math.abs(wheelSession.distance) < threshold) return
+      if (wheelSession.fired && now - wheelSession.lastStepTime < SCROLL_STORY_DEFAULTS.wheelRepeatIntervalMs) return
       const origin = selectedTarget ?? Math.round(offset / step.get())
+      const destination = gestureTarget(origin, wheelSession.distance, lastScene, threshold)
       wheelSession.fired = true
-      select(gestureTarget(origin, wheelSession.distance, lastScene, SCROLL_STORY_DEFAULTS.wheelThreshold))
+      wheelSession.lastStepTime = now
+      wheelSession.distance = 0
+      if (destination !== origin) select(destination)
     }
     const onTouchStart = (event: TouchEvent) => {
       if (!element.contains(event.target as Node)) return

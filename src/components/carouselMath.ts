@@ -38,6 +38,8 @@ export const SCROLL_STORY_DEFAULTS = {
   snapDelayMs: 65,
   wheelGestureIdleMs: 150,
   wheelThreshold: 8,
+  wheelRepeatDistance: 40,
+  wheelRepeatIntervalMs: 110,
   swipeThreshold: 10,
   touchClickGuardMs: 450,
 } as const

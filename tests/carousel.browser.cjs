@@ -135,19 +135,42 @@ test('reduced motion switches scenes immediately through navigation', async () =
 })
 
 
-test('a short wheel gesture advances once and trackpad momentum cannot strand or skip scenes', async () => {
+test('a short wheel gesture advances once and a fading momentum tail cannot add a step', async () => {
   const page = await open()
   await page.mouse.move(720, 480)
   await page.mouse.wheel(0, 20)
-  for (let i = 0; i < 18; i++) { await page.mouse.wheel(0, 4); await page.waitForTimeout(16) }
+  for (const delta of [6, 5, 4, 3, 2, 1, 0.5, 0.2]) { await page.mouse.wheel(0, delta); await page.waitForTimeout(16) }
   await settle(page)
   assert.equal(await active(page), 0)
   const first = await metrics(page)
   assert.ok(Math.abs(first.y - first.step) < 1)
   await page.mouse.wheel(0, -20)
-  for (let i = 0; i < 12; i++) { await page.mouse.wheel(0, -3); await page.waitForTimeout(16) }
+  for (const delta of [-5, -4, -3, -2, -1, -0.5]) { await page.mouse.wheel(0, delta); await page.waitForTimeout(16) }
   await settle(page)
   assert.ok(await page.evaluate(() => scrollY) < 1)
+  await page.close()
+})
+
+test('sustained trackpad input advances without requiring an idle pause and can reverse', async () => {
+  const page = await open()
+  await page.mouse.move(720, 480)
+  for (let index = 0; index < 20; index++) {
+    await page.mouse.wheel(0, 10)
+    await page.waitForTimeout(16)
+  }
+  const during = await metrics(page)
+  assert.ok(during.y > during.step * 1.5, 'Continued scrolling must move past the first scene before input stops')
+  await settle(page)
+  const forward = await active(page)
+  assert.ok(forward >= 1 && forward < 8)
+  const centered = await metrics(page)
+  assert.ok(Math.abs(centered.y - centered.step * (forward + 1)) < 1)
+  for (let index = 0; index < 6; index++) {
+    await page.mouse.wheel(0, -10)
+    await page.waitForTimeout(16)
+  }
+  await settle(page)
+  assert.ok(await active(page) < forward)
   await page.close()
 })
 
