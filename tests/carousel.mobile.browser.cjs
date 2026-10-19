@@ -119,3 +119,67 @@ test('a mobile swipe scales continuously with few layout passes and 44px touch t
   }
   await page.close()
 })
+
+test('cover credits flip on tap, fit compact screens and reset after navigation', async () => {
+  const page = await open()
+  const cover = page.locator('[data-image-index="0"]')
+  await cover.tap()
+  await page.waitForTimeout(500)
+  assert.equal(await cover.locator('.cover-action').getAttribute('aria-pressed'), 'true')
+  assert.equal(await cover.locator('.cover-back').getAttribute('aria-hidden'), 'false')
+  for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }]) {
+    await page.setViewportSize(viewport)
+    await centered(page, 1)
+    const fits = await cover.locator('.cover-back').evaluate(el => el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1)
+    assert.ok(fits, 'Credits must fit inside the cover')
+    const toggle = await page.getByRole('button', { name: 'Ver portada', exact: true }).boundingBox()
+    assert.ok(toggle.height >= 44 && toggle.y >= 0 && toggle.y + toggle.height <= viewport.height)
+  }
+  await page.getByRole('button', { name: 'Ver portada', exact: true }).tap()
+  assert.equal(await cover.locator('.cover-action').getAttribute('aria-pressed'), 'false')
+  await cover.locator('.cover-action').focus()
+  await page.keyboard.press('Enter')
+  assert.equal(await cover.locator('.cover-action').getAttribute('aria-pressed'), 'true')
+  await page.keyboard.press('ArrowDown')
+  await centered(page, 2)
+  await page.getByRole('button', { name: 'Lanzamiento anterior', exact: true }).tap()
+  await centered(page, 1)
+  assert.equal(await cover.locator('.cover-action').getAttribute('aria-pressed'), 'false')
+  await page.close()
+})
+
+test('reduced motion switches cover faces without a rotating transition', async () => {
+  const page = await open()
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.reload()
+  await centered(page, 1)
+  await page.getByRole('button', { name: 'Mi participación', exact: true }).tap()
+  await page.waitForTimeout(40)
+  const rotation = await page.locator('[data-image-index="0"] .cover-flipper').evaluate(el => new DOMMatrix(getComputedStyle(el).transform).m11)
+  assert.ok(Math.abs(rotation + 1) < 0.001)
+  await page.close()
+})
+
+
+test('streaming placeholder buttons fit mobile covers and do not contain links', async () => {
+  const page = await open()
+  const cover = page.locator('[data-image-index="0"]')
+  await cover.tap()
+  await page.waitForTimeout(500)
+  for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }]) {
+    await page.setViewportSize(viewport)
+    await centered(page, 1)
+    const fits = await cover.locator('.cover-back').evaluate(el => el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1)
+    assert.ok(fits, 'Credits and platform buttons must fit the cover')
+    for (const platform of ['Spotify', 'Apple Music']) {
+      const button = cover.getByRole('button', { name: platform, exact: true })
+      assert.equal(await button.isDisabled(), true)
+      const box = await button.boundingBox()
+      assert.ok(box.height >= 43.9 && box.y >= 0 && box.y + box.height <= viewport.height)
+    }
+  }
+  assert.equal(await cover.locator('a').count(), 0)
+  assert.equal(await cover.locator('.cover-action').getAttribute('aria-pressed'), 'true')
+  await page.getByRole('button', { name: 'Ver portada', exact: true }).tap()
+  await page.close()
+})

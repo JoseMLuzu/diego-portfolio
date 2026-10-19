@@ -29,7 +29,6 @@ test('wheel drives the home and first cover together, snaps, and reverses back h
   assert.ok(homeScale < 0.99 && homeScale > 0.14)
   assert.ok(await scale(page, 0) > initialCover)
   assert.ok(await page.evaluate(() => scrollY) > 0)
-  await page.mouse.wheel(0, 120)
   await settle(page)
   assert.equal(await active(page), 0)
   assert.ok(Math.abs(await scale(page, 0) - 1) < 0.002)

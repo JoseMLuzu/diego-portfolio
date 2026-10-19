@@ -9,7 +9,7 @@ npm run dev
 
 ## Integration
 
-`src/components/VerticalCarousel.tsx` exports the component. Releases and their descriptions live in `src/data/releases.ts`; sample SVG covers are in `public/covers/`. Replace these examples with real album artwork. The optional `listenUrl` field enables a direct listening link.
+`src/components/VerticalCarousel.tsx` exports the component. Releases and their descriptions live in `src/data/releases.ts`; sample SVG covers are in `public/covers/`. Replace these examples with real album artwork. The optional `listenUrl` field enables a direct listening link. Each release also has `contribution.roles` and `contribution.description` for its reverse side; the included credits are explicitly marked examples. Tap the centered cover or “Mi participación” to flip it, and tap again to return. Enter/Space also work on the focused cover. The reverse also shows Spotify and Apple Music placeholder buttons, currently disabled with no outbound links. Changing scenes resets the face; reduced motion switches faces immediately.
 
 ```tsx
 <VerticalCarousel
