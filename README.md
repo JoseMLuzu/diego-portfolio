@@ -22,6 +22,8 @@ Images use `object-fit: cover`: they retain their proportions and are cropped to
 
 ## Tuning the motion
 
+The default feel is a quick, firm snap: a stiffer spring with lower mass settles each scene promptly, while slightly higher drag sensitivity and lower input thresholds make short gestures responsive. A 150 ms idle interval separates wheel gestures while still grouping trackpad momentum into one scene change.
+
 All default values are in `src/components/carouselMath.ts`. You can also override them through `config`:
 
 | Parameter | Effect |

@@ -49,7 +49,7 @@ test('a neutral touch during a transition resumes the intended project instead o
   const page = await open()
   await page.locator('.story-stage').focus()
   await page.keyboard.press('ArrowDown')
-  await page.waitForTimeout(60)
+  await page.waitForTimeout(20)
   await page.touchscreen.tap(18, 700)
   await centered(page, 2)
   await page.close()

@@ -138,6 +138,7 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
     }
     const select = (index: number, behavior: ScrollBehavior = 'smooth') => {
       cancelAnimationFrame(resizeFrame)
+      resizeFrame = 0
       stop()
       const target = start.get() + clamp(Math.round(index), 0, lastScene) * step.get()
       selectedTarget = clamp(Math.round(index), 0, lastScene)
@@ -154,7 +155,7 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
     relativeRef.current = direction => select((selectedTarget ?? Math.round((window.scrollY - start.get()) / step.get())) + direction)
     const settleNearest = () => {
       clearTimeout(timer)
-      if (programmatic || touching || drag) return
+      if (programmatic || touching || drag || resizeFrame) return
       const offset = window.scrollY - start.get()
       if (offset < 0 || offset > lastScene * step.get()) return
       const nearest = Math.round(offset / step.get())
@@ -162,6 +163,10 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
     }
     const scheduleSnap = () => {
       clearTimeout(timer)
+      // A resize changes the step before its scroll correction reaches the DOM.
+      // Ignore native scrollend events in that gap instead of selecting a scene
+      // using the previous scroll offset and the new step.
+      if (resizeFrame) return
       if (!programmatic) selectedTarget = null
       if (programmatic || touching || drag) return
       timer = setTimeout(settleNearest, SCROLL_STORY_DEFAULTS.snapDelayMs)
@@ -186,8 +191,11 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
           writeScroll(start.get() + oldOffset * nextStep)
           if (touchGesture) touchGesture.startScroll = window.scrollY - touchGesture.distance / Math.max(160, imageWidth.get()) * nextStep * config.dragSensitivity
           else if (drag) drag.startScroll = window.scrollY
-          else if (destination !== null) select(destination)
-          else scheduleSnap()
+          resizeFrame = 0
+          if (!touchGesture && !drag) {
+            if (destination !== null) select(destination)
+            else scheduleSnap()
+          }
         })
       }
       measured = true

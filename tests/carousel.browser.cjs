@@ -26,7 +26,7 @@ test('wheel drives the home and first cover together, snaps, and reverses back h
   await page.mouse.wheel(0, 120)
   await page.waitForTimeout(65)
   const homeScale = await page.locator('.story-home').evaluate(e => new DOMMatrix(getComputedStyle(e).transform).a)
-  assert.ok(homeScale < 0.99 && homeScale > 0.6)
+  assert.ok(homeScale < 0.99 && homeScale > 0.14)
   assert.ok(await scale(page, 0) > initialCover)
   assert.ok(await page.evaluate(() => scrollY) > 0)
   await page.mouse.wheel(0, 120)

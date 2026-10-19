@@ -6,10 +6,10 @@ export const CAROUSEL_DEFAULTS = {
   gap: 16,
   falloff: 2.8,
   compression: 1.5,
-  dragSensitivity: 1,
-  stiffness: 210,
-  damping: 32,
-  mass: 0.8,
+  dragSensitivity: 1.12,
+  stiffness: 620,
+  damping: 38,
+  mass: 0.55,
 } as const
 
 export type CarouselConfig = { [K in keyof typeof CAROUSEL_DEFAULTS]: number }
@@ -35,10 +35,10 @@ export const SCROLL_STORY_DEFAULTS = {
   stepRatio: 0.6,
   minStep: 260,
   maxStep: 440,
-  snapDelayMs: 120,
-  wheelGestureIdleMs: 220,
-  wheelThreshold: 10,
-  swipeThreshold: 12,
+  snapDelayMs: 65,
+  wheelGestureIdleMs: 150,
+  wheelThreshold: 8,
+  swipeThreshold: 10,
   touchClickGuardMs: 450,
 } as const
 
