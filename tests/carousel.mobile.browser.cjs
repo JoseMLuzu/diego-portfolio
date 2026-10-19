@@ -120,22 +120,26 @@ test('a mobile swipe scales continuously with few layout passes and 44px touch t
   await page.close()
 })
 
-test('cover credits flip on tap, fit compact screens and reset after navigation', async () => {
+test('record slides out on tap, fits compact screens and resets after navigation', async () => {
   const page = await open()
   const cover = page.locator('[data-image-index="0"]')
   await cover.tap()
   await page.waitForTimeout(500)
   assert.equal(await cover.locator('.cover-action').getAttribute('aria-pressed'), 'true')
-  assert.equal(await cover.locator('.cover-back').getAttribute('aria-hidden'), 'false')
+  assert.equal(await cover.locator('.project-record').getAttribute('aria-hidden'), 'false')
   for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }]) {
     await page.setViewportSize(viewport)
     await centered(page, 1)
-    const fits = await cover.locator('.cover-back').evaluate(el => el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1)
-    assert.ok(fits, 'Credits must fit inside the cover')
-    const toggle = await page.getByRole('button', { name: 'Ver portada', exact: true }).boundingBox()
+    const fits = await cover.locator('.record-content').evaluate(el => el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1)
+    assert.ok(fits, 'Credits must fit inside the disc')
+    const frame = await page.locator('.carousel').boundingBox()
+    const disc = await cover.locator('.project-record').boundingBox()
+    const sleeve = await cover.locator('.record-sleeve').boundingBox()
+    assert.ok(disc.y >= frame.y - 1 && sleeve.y + sleeve.height <= frame.y + frame.height + 1, 'Open record and sleeve must stay inside the carousel')
+    const toggle = await page.getByRole('button', { name: 'Guardar disco', exact: true }).boundingBox()
     assert.ok(toggle.height >= 44 && toggle.y >= 0 && toggle.y + toggle.height <= viewport.height)
   }
-  await page.getByRole('button', { name: 'Ver portada', exact: true }).tap()
+  await page.getByRole('button', { name: 'Guardar disco', exact: true }).tap()
   assert.equal(await cover.locator('.cover-action').getAttribute('aria-pressed'), 'false')
   await cover.locator('.cover-action').focus()
   await page.keyboard.press('Enter')
@@ -148,15 +152,20 @@ test('cover credits flip on tap, fit compact screens and reset after navigation'
   await page.close()
 })
 
-test('reduced motion switches cover faces without a rotating transition', async () => {
+test('reduced motion opens the record immediately without a slide transition', async () => {
   const page = await open()
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.reload()
   await centered(page, 1)
   await page.getByRole('button', { name: 'Mi participación', exact: true }).tap()
   await page.waitForTimeout(40)
-  const rotation = await page.locator('[data-image-index="0"] .cover-flipper').evaluate(el => new DOMMatrix(getComputedStyle(el).transform).m11)
-  assert.ok(Math.abs(rotation + 1) < 0.001)
+  const geometry = await page.locator('[data-image-index="0"] .project-record').evaluate(el => {
+    const transform = new DOMMatrix(getComputedStyle(el).transform)
+    return { y: transform.m42, size: el.clientWidth, opacity: getComputedStyle(el).opacity, rotation: transform.m12 }
+  })
+  assert.ok(Math.abs(geometry.y + geometry.size * 0.25) < 1)
+  assert.equal(geometry.opacity, '1')
+  assert.ok(Math.abs(geometry.rotation) < 0.001)
   await page.close()
 })
 
@@ -169,8 +178,8 @@ test('streaming placeholder buttons fit mobile covers and do not contain links',
   for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }]) {
     await page.setViewportSize(viewport)
     await centered(page, 1)
-    const fits = await cover.locator('.cover-back').evaluate(el => el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1)
-    assert.ok(fits, 'Credits and platform buttons must fit the cover')
+    const fits = await cover.locator('.record-content').evaluate(el => el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1)
+    assert.ok(fits, 'Credits and platform buttons must fit the disc')
     for (const platform of ['Spotify', 'Apple Music']) {
       const button = cover.getByRole('button', { name: platform, exact: true })
       assert.equal(await button.isDisabled(), true)
@@ -180,6 +189,25 @@ test('streaming placeholder buttons fit mobile covers and do not contain links',
   }
   assert.equal(await cover.locator('a').count(), 0)
   assert.equal(await cover.locator('.cover-action').getAttribute('aria-pressed'), 'true')
-  await page.getByRole('button', { name: 'Ver portada', exact: true }).tap()
+  await page.getByRole('button', { name: 'Guardar disco', exact: true }).tap()
+  await page.close()
+})
+
+
+test('record emerges progressively and can be put away by tapping its exposed top', async () => {
+  const page = await open()
+  const cover = page.locator('[data-image-index="0"]')
+  const closed = await cover.boundingBox()
+  await cover.tap()
+  await page.waitForTimeout(100)
+  const progress = await cover.locator('.project-record').evaluate(el => Number(getComputedStyle(el).opacity))
+  assert.ok(progress > 0 && progress < 1, 'Record must animate between its closed and open states')
+  await page.waitForTimeout(550)
+  const disc = await cover.locator('.project-record').boundingBox()
+  assert.ok(disc.y < closed.y - 10, 'Record must emerge above the original cover')
+  await page.touchscreen.tap(disc.x + disc.width / 2, disc.y + 25)
+  assert.equal(await cover.locator('.cover-action').getAttribute('aria-pressed'), 'false')
+  await page.waitForTimeout(600)
+  assert.equal(await cover.locator('.project-record').evaluate(el => getComputedStyle(el).opacity), '0')
   await page.close()
 })

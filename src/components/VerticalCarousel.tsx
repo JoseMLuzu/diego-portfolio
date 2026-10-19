@@ -19,10 +19,10 @@ interface Props {
   onSceneChange?: (scene: number) => void
 }
 
-function CarouselImage({ image, index, position, width, config, active, select, flipped, toggle }: {
+function CarouselImage({ image, index, position, width, config, active, select, expanded, toggle }: {
   image: Release; index: number; position: MotionValue<number>; width: MotionValue<number>
   config: CarouselConfig; active: boolean; select: (index: number) => void
-  flipped: boolean; toggle: () => void
+  expanded: boolean; toggle: () => void
 }) {
   const reducedMotion = useReducedMotion()
   const detailsId = useId()
@@ -36,20 +36,26 @@ function CarouselImage({ image, index, position, width, config, active, select, 
   const artworkScale = useTransform(() => geometry.get().scale / hitScale.get())
   return (
     <motion.div className="carousel-image" style={{ y, zIndex, scale: hitScale, width, height: imageHeight }} aria-current={active ? 'true' : undefined} data-image-index={index}>
-      <button className="cover-action" type="button" tabIndex={active ? 0 : -1} aria-label={active ? `${flipped ? 'Ver portada de' : 'Ver mi participación en'} ${image.title}` : `Ver ${image.title}`} aria-pressed={active ? flipped : undefined} aria-describedby={flipped ? detailsId : undefined} onClick={() => active ? toggle() : select(index + 1)} />
+      <motion.button className="cover-action" type="button" initial={false} animate={{ scaleY: expanded ? 1.413 : 1, y: expanded ? '3.15%' : '0%' }} transition={{ duration: reducedMotion ? 0 : 0.55, ease: [0.22, 0.68, 0.2, 1] }} tabIndex={active ? 0 : -1} aria-label={active ? `${expanded ? 'Guardar disco de' : 'Ver mi participación en'} ${image.title}` : `Ver ${image.title}`} aria-pressed={active ? expanded : undefined} aria-describedby={expanded ? detailsId : undefined} onClick={() => active ? toggle() : select(index + 1)} />
       <motion.span className="cover-artwork" style={{ width, height: imageHeight, scale: artworkScale }}>
-        <motion.span className="cover-flipper" animate={{ rotateY: flipped ? 180 : 0 }} transition={{ duration: reducedMotion ? 0 : 0.45, ease: [0.22, 0.68, 0.2, 1] }}>
-          <img className="cover-front" style={{ width: '100%', height: '100%' }} src={image.src} alt={image.alt} aria-hidden={flipped} draggable={false} fetchPriority={index === 0 ? 'high' : 'auto'} />
-          <span id={detailsId} className="cover-back" aria-hidden={!flipped}>
-            <span className="cover-back-label">MI PARTICIPACIÓN</span>
-            <span className="cover-back-title">{image.title}</span>
-            <span className="cover-back-roles">{image.contribution.roles.join(' · ')}</span>
-            <span className="cover-back-description">{image.contribution.description}</span>
-            <span className="cover-streaming" data-story-interactive="true" style={{ pointerEvents: active && flipped ? 'auto' : 'none' }}>
-              <button type="button" disabled>Spotify<ArrowIcon /></button>
-              <button type="button" disabled>Apple Music<ArrowIcon /></button>
+        <motion.span className="record-composition" animate={{ scale: expanded ? 0.9 : 1 }} transition={{ duration: reducedMotion ? 0 : 0.5, ease: [0.22, 0.68, 0.2, 1] }}>
+          <motion.span id={detailsId} className="project-record" aria-hidden={!expanded} initial={false} animate={{ y: expanded ? '-25%' : '0%', rotate: expanded ? 0 : -18, opacity: expanded ? 1 : 0 }} transition={{ duration: reducedMotion ? 0 : 0.55, ease: [0.22, 0.68, 0.2, 1] }}>
+            <span className="record-art" style={{ backgroundImage: `url("${image.src}")` }} />
+            <span className="record-grooves" />
+            <span className="record-content">
+              <span className="record-label">MI PARTICIPACIÓN</span>
+              <span className="record-title">{image.title}</span>
+              <span className="record-roles">{image.contribution.roles.join(' · ')}</span>
+              <span className="record-description">{image.contribution.description}</span>
+              <span className="record-streaming" data-story-interactive="true" style={{ pointerEvents: active && expanded ? 'auto' : 'none' }}>
+                <button type="button" disabled>Spotify<ArrowIcon /></button>
+                <button type="button" disabled>Apple Music<ArrowIcon /></button>
+              </span>
             </span>
-          </span>
+          </motion.span>
+          <motion.span className="record-sleeve" initial={false} animate={{ y: expanded ? '48%' : '0%', scale: expanded ? 0.68 : 1 }} transition={{ duration: reducedMotion ? 0 : 0.55, ease: [0.22, 0.68, 0.2, 1] }}>
+            <img className="cover-front" style={{ width: '100%', height: '100%' }} src={image.src} alt={image.alt} draggable={false} fetchPriority={index === 0 ? 'high' : 'auto'} />
+          </motion.span>
         </motion.span>
       </motion.span>
     </motion.div>
@@ -79,7 +85,7 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
   const trackHeight = useTransform(() => frameHeight.get() + step.get() * lastScene)
   const [scene, setScene] = useState(0)
   const [dragging, setDragging] = useState(false)
-  const [flippedId, setFlippedId] = useState<string | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   const sceneRef = useRef(0)
   const helpId = useId()
   const isHome = scene === 0
@@ -156,7 +162,7 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
       selectedTarget = null
     }
     const select = (index: number, behavior: ScrollBehavior = 'smooth') => {
-      if (Math.round(index) !== sceneRef.current) setFlippedId(null)
+      if (Math.round(index) !== sceneRef.current) setExpandedId(null)
       const currentVelocity = scrollY.getVelocity()
       cancelAnimationFrame(resizeFrame)
       resizeFrame = 0
@@ -398,11 +404,11 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
         </motion.section>
         <motion.section id="proyectos" className="gallery story-gallery" style={{ opacity: galleryOpacity, pointerEvents: galleryPointerEvents, zIndex: galleryZ }} aria-hidden={!isProject} aria-label="Proyectos musicales">
           <div ref={carousel} className="carousel" role="region" aria-roledescription="carrusel" aria-label="Carrusel de proyectos musicales">
-            {images.map((image, index) => <CarouselImage key={image.id} image={image} index={index} position={visualPosition} width={imageWidth} config={config} active={scene === index + 1} flipped={scene === index + 1 && flippedId === image.id} toggle={() => setFlippedId(current => current === image.id ? null : image.id)} select={index => goToRef.current(index)} />)}
+            {images.map((image, index) => <CarouselImage key={image.id} image={image} index={index} position={visualPosition} width={imageWidth} config={config} active={scene === index + 1} expanded={scene === index + 1 && expandedId === image.id} toggle={() => setExpandedId(current => current === image.id ? null : image.id)} select={index => goToRef.current(index)} />)}
             <motion.div className="release-counter" style={{ opacity: captionOpacity }} aria-hidden="true"><span className="eyebrow">PROYECTOS</span><span className="caption-index">{String(projectNumber).padStart(2, '0')} <span>/ {String(images.length).padStart(2, '0')}</span></span></motion.div>
             <motion.div className="position-rail" style={{ opacity: captionOpacity }} aria-label="Seleccionar lanzamiento">{images.map((image, index) => <button key={image.id} tabIndex={isProject ? 0 : -1} className={scene === index + 1 ? 'is-active' : ''} aria-label={`Ir a lanzamiento ${index + 1}: ${image.title}`} aria-current={scene === index + 1 ? 'true' : undefined} onClick={() => goToRef.current(index + 1)}><span /></button>)}</motion.div>
           </div>
-          <motion.div className="release-caption" style={{ opacity: captionOpacity }} aria-live="polite" aria-atomic="true"><span className="release-artist">{release?.artist}</span><h2>{release?.title}</h2><p>{release?.format} <span>·</span> {release?.year}</p><button className="cover-details-toggle" type="button" data-story-interactive="true" tabIndex={isProject ? 0 : -1} aria-pressed={flippedId === release?.id} onClick={() => setFlippedId(current => current === release?.id ? null : release?.id ?? null)}>{flippedId === release?.id ? 'Ver portada' : 'Mi participación'}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8a8 8 0 1 0 1 7M19 3v5h-5" /></svg></button>{release?.listenUrl && <a className="listen-link" tabIndex={isProject ? 0 : -1} href={release.listenUrl} target="_blank" rel="noreferrer">Escuchar <span aria-hidden="true"><ArrowIcon /></span></a>}</motion.div>
+          <motion.div className="release-caption" style={{ opacity: captionOpacity }} aria-live="polite" aria-atomic="true"><span className="release-artist">{release?.artist}</span><h2>{release?.title}</h2><p>{release?.format} <span>·</span> {release?.year}</p><button className="cover-details-toggle" type="button" data-story-interactive="true" tabIndex={isProject ? 0 : -1} aria-pressed={expandedId === release?.id} onClick={() => setExpandedId(current => current === release?.id ? null : release?.id ?? null)}>{expandedId === release?.id ? 'Guardar disco' : 'Mi participación'}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8a8 8 0 1 0 1 7M19 3v5h-5" /></svg></button>{release?.listenUrl && <a className="listen-link" tabIndex={isProject ? 0 : -1} href={release.listenUrl} target="_blank" rel="noreferrer">Escuchar <span aria-hidden="true"><ArrowIcon /></span></a>}</motion.div>
           <motion.div className="gallery-bottom" style={{ opacity: captionOpacity }}><p id={helpId}><span className="scroll-symbol" aria-hidden="true"><ArrowIcon direction="vertical" /></span> Desliza para explorar <span className="keyboard-help" aria-hidden="true">· <ArrowIcon direction="up" /> <ArrowIcon direction="down" /></span></p><div className="gallery-controls"><button tabIndex={isProject ? 0 : -1} aria-label={scene <= 1 ? 'Volver al inicio' : 'Lanzamiento anterior'} onClick={() => relativeRef.current(-1)}><ArrowIcon direction="up" /></button><span aria-hidden="true">{String(projectNumber).padStart(2, '0')} / {String(images.length).padStart(2, '0')}</span><button tabIndex={isProject ? 0 : -1} aria-label={scene === images.length ? 'Ver invitación de contacto' : 'Lanzamiento siguiente'} onClick={() => relativeRef.current(1)}><ArrowIcon direction="down" /></button></div></motion.div>
         </motion.section>
         <motion.section className="story-outro" style={{ y: outroY, scale: outroScale, opacity: outroOpacity, pointerEvents: outroPointerEvents }} aria-hidden={!isOutro} aria-labelledby="outro-title">

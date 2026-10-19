@@ -130,18 +130,20 @@ main:focus, .projects-section:focus { outline: none; }
 .carousel-image img { position: absolute; left: 50%; top: 50%; translate: -50% -50%; display: block; object-fit: cover; pointer-events: none; border-radius: 1px; box-shadow: 0 10px 40px #00000026; will-change: transform; }
 .cover-action { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; padding: 0; background: transparent; cursor: inherit; }
 .cover-action:focus-visible { outline: 2px solid var(--accent, #e75d38); outline-offset: 5px; }
-.cover-artwork { position: absolute; left: 50%; top: 50%; translate: -50% -50%; display: block; perspective: 1000px; pointer-events: none; container-type: inline-size; }
-.cover-flipper { display: block; width: 100%; height: 100%; position: relative; transform-style: preserve-3d; }
-.cover-front, .cover-back { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-.cover-back { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: flex-start; padding: 8%; background: #171716; border: 1px solid #ffffff24; color: #eeeae3; text-align: left; transform: rotateY(180deg); }
-.cover-back-label { font-size: 3cqw; letter-spacing: .15em; color: #e75d38; }
-.cover-back-title { margin-top: 7%; font-size: 8cqw; line-height: 1.1; letter-spacing: -.03em; }
-.cover-back-roles { margin-top: 6%; font-size: 4.3cqw; line-height: 1.4; }
-.cover-back-description { margin-top: 4%; color: #b8b3ac; font-size: 4cqw; line-height: 1.5; }
-.cover-back-hint { margin-top: auto; padding-top: 4%; color: #a5a19b; font-size: 3cqw; }
-.cover-streaming { display: flex; flex-wrap: wrap; align-items: center; gap: 0 12px; margin-top: auto; padding-top: 2%; }
-.cover-streaming button { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; font-size: clamp(10px, 3.6cqw, 14px); color: #b8b3ac; border: 0; padding: 0; background: transparent; opacity: 1; cursor: default; }
-.cover-streaming button svg { width: 1em; height: 1em; }
+.cover-artwork { position: absolute; left: 50%; top: 50%; translate: -50% -50%; display: block; pointer-events: none; container-type: inline-size; }
+.record-composition { position: relative; display: block; width: 100%; height: 100%; }
+.record-sleeve { position: absolute; inset: 0; display: block; z-index: 2; }
+.project-record { position: absolute; top: 0; left: 0; width: 100%; aspect-ratio: 1; border-radius: 50%; overflow: hidden; background: #171716; border: 1px solid #ffffff30; box-shadow: 0 14px 40px #0008, inset 0 0 0 5px #ffffff08; }
+.record-art { position: absolute; inset: -8%; background-size: cover; background-position: center; filter: blur(7px) brightness(.28); }
+.record-grooves { position: absolute; inset: 0; border-radius: inherit; background: repeating-radial-gradient(circle, transparent 0 3px, #ffffff09 3px 4px), radial-gradient(circle, transparent 52%, #0005 100%); }
+.record-content { position: absolute; inset: 15% 12% 12%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #f3f0ea; }
+.record-label { font-size: 2.8cqw; letter-spacing: .13em; color: #ed997c; }
+.record-title { margin-top: 4%; font-size: 6.5cqw; line-height: 1.1; letter-spacing: -.03em; }
+.record-roles { margin-top: 4%; font-size: 3.6cqw; line-height: 1.4; }
+.record-description { margin-top: 3%; color: #dad5cf; font-size: 3.4cqw; line-height: 1.45; max-width: 90%; }
+.record-streaming { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 2%; }
+.record-streaming button { display: inline-flex; align-items: center; gap: 4px; min-width: 44px; min-height: 49px; font-size: clamp(10px, 3.4cqw, 13px); color: #e9e1d9; border: 0; padding: 0; background: transparent; opacity: 1; cursor: default; }
+.record-streaming button svg { width: 1em; height: 1em; }
 .cover-details-toggle { display: inline-flex; align-items: center; align-self: center; justify-content: center; gap: 9px; min-height: 44px; padding: 8px 12px; margin-top: 4px; border: 0; background: transparent; color: #b8b3ac; font-size: 12px; cursor: pointer; }
 .cover-details-toggle svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .cover-details-toggle[aria-pressed="true"] { color: #e75d38; }
