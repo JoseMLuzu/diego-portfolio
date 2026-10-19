@@ -133,7 +133,10 @@ main:focus, .projects-section:focus { outline: none; }
 .cover-artwork { position: absolute; left: 50%; top: 50%; translate: -50% -50%; display: block; pointer-events: none; container-type: inline-size; }
 .record-composition { position: relative; display: block; width: 100%; height: 100%; }
 .record-sleeve { position: absolute; inset: 0; display: block; z-index: 2; }
-.project-record { position: absolute; top: 0; left: 0; width: 100%; aspect-ratio: 1; border-radius: 50%; overflow: hidden; background: #171716; border: 1px solid #ffffff30; box-shadow: 0 14px 40px #0008, inset 0 0 0 5px #ffffff08; }
+.project-record { position: absolute; top: 0; left: 0; display: block; border-radius: 50%; background: #171716; border: 1px solid #ffffff30; box-shadow: 0 14px 40px #0008, inset 0 0 0 5px #ffffff08; }
+/* Keep clipping on a stationary child: Safari can leak filtered layers past
+   rounded overflow while the parent is translated, rotated or faded. */
+.record-surface { position: absolute; inset: 0; display: block; border-radius: 50%; overflow: hidden; isolation: isolate; -webkit-clip-path: circle(50% at 50% 50%); clip-path: circle(50% at 50% 50%); -webkit-mask-image: -webkit-radial-gradient(white, black); }
 .record-art { position: absolute; inset: -8%; background-size: cover; background-position: center; filter: blur(7px) brightness(.28); }
 .record-grooves { position: absolute; inset: 0; border-radius: inherit; background: repeating-radial-gradient(circle, transparent 0 3px, #ffffff09 3px 4px), radial-gradient(circle, transparent 52%, #0005 100%); }
 .record-content { position: absolute; inset: 15% 12% 12%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #f3f0ea; }

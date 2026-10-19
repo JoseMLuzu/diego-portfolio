@@ -211,3 +211,41 @@ test('record emerges progressively and can be put away by tapping its exposed to
   assert.equal(await cover.locator('.project-record').evaluate(el => getComputedStyle(el).opacity), '0')
   await page.close()
 })
+
+test('blurred record artwork stays circular on desktop through repeated openings', async () => {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 960 } })
+  await page.goto(`${url}/#/proyectos`)
+  await centered(page, 1)
+  // A bright diagnostic texture makes any square layer leaking beyond the
+  // circle visible in the rendered pixels, rather than just checking CSS.
+  await page.addStyleTag({ content: `
+    .record-art { background-image: none !important; background: #ff0000 !important; filter: blur(7px) !important; }
+    .record-content, .record-grooves { visibility: hidden; }
+    .project-record { background: transparent; box-shadow: none; border: 0; }
+  ` })
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await page.getByRole('button', { name: 'Mi participación', exact: true }).click()
+    await page.waitForTimeout(650)
+    const record = page.locator('[data-image-index="0"] .project-record')
+    const bounds = await record.boundingBox()
+    assert.ok(Math.abs(bounds.width - bounds.height) < 1, 'Record dimensions must stay square')
+    const png = await record.screenshot()
+    const samples = await page.evaluate(async base64 => {
+      const image = new Image()
+      image.src = `data:image/png;base64,${base64}`
+      await image.decode()
+      const canvas = document.createElement('canvas')
+      canvas.width = image.width
+      canvas.height = image.height
+      const context = canvas.getContext('2d')
+      context.drawImage(image, 0, 0)
+      const pixel = (x, y) => Array.from(context.getImageData(Math.floor(image.width * x), Math.floor(image.height * y), 1, 1).data)
+      return { center: pixel(0.5, 0.5), corners: [pixel(0.08, 0.08), pixel(0.92, 0.08)] }
+    }, png.toString('base64'))
+    assert.ok(samples.center[0] > 180 && samples.center[1] < 60, 'Diagnostic artwork must be rendered')
+    assert.ok(samples.corners.every(pixel => pixel[0] < 80), `Artwork leaked outside the circle: ${JSON.stringify(samples)}`)
+    await page.getByRole('button', { name: 'Guardar disco', exact: true }).click()
+    await page.waitForTimeout(650)
+  }
+  await page.close()
+})

@@ -39,17 +39,19 @@ function CarouselImage({ image, index, position, width, config, active, select, 
       <motion.button className="cover-action" type="button" initial={false} animate={{ scaleY: expanded ? 1.413 : 1, y: expanded ? '3.15%' : '0%' }} transition={{ duration: reducedMotion ? 0 : 0.55, ease: [0.22, 0.68, 0.2, 1] }} tabIndex={active ? 0 : -1} aria-label={active ? `${expanded ? 'Guardar disco de' : 'Ver mi participación en'} ${image.title}` : `Ver ${image.title}`} aria-pressed={active ? expanded : undefined} aria-describedby={expanded ? detailsId : undefined} onClick={() => active ? toggle() : select(index + 1)} />
       <motion.span className="cover-artwork" style={{ width, height: imageHeight, scale: artworkScale }}>
         <motion.span className="record-composition" animate={{ scale: expanded ? 0.9 : 1 }} transition={{ duration: reducedMotion ? 0 : 0.5, ease: [0.22, 0.68, 0.2, 1] }}>
-          <motion.span id={detailsId} className="project-record" aria-hidden={!expanded} initial={false} animate={{ y: expanded ? '-25%' : '0%', rotate: expanded ? 0 : -18, opacity: expanded ? 1 : 0 }} transition={{ duration: reducedMotion ? 0 : 0.55, ease: [0.22, 0.68, 0.2, 1] }}>
-            <span className="record-art" style={{ backgroundImage: `url("${image.src}")` }} />
-            <span className="record-grooves" />
-            <span className="record-content">
-              <span className="record-label">MI PARTICIPACIÓN</span>
-              <span className="record-title">{image.title}</span>
-              <span className="record-roles">{image.contribution.roles.join(' · ')}</span>
-              <span className="record-description">{image.contribution.description}</span>
-              <span className="record-streaming" data-story-interactive="true" style={{ pointerEvents: active && expanded ? 'auto' : 'none' }}>
-                <button type="button" disabled>Spotify<ArrowIcon /></button>
-                <button type="button" disabled>Apple Music<ArrowIcon /></button>
+          <motion.span id={detailsId} className="project-record" style={{ width, height: width }} aria-hidden={!expanded} initial={false} animate={{ y: expanded ? '-25%' : '0%', rotate: expanded ? 0 : -18, opacity: expanded ? 1 : 0 }} transition={{ duration: reducedMotion ? 0 : 0.55, ease: [0.22, 0.68, 0.2, 1] }}>
+            <span className="record-surface">
+              <span className="record-art" style={{ backgroundImage: `url("${image.src}")` }} />
+              <span className="record-grooves" />
+              <span className="record-content">
+                <span className="record-label">MI PARTICIPACIÓN</span>
+                <span className="record-title">{image.title}</span>
+                <span className="record-roles">{image.contribution.roles.join(' · ')}</span>
+                <span className="record-description">{image.contribution.description}</span>
+                <span className="record-streaming" data-story-interactive="true" style={{ pointerEvents: active && expanded ? 'auto' : 'none' }}>
+                  <button type="button" disabled>Spotify<ArrowIcon /></button>
+                  <button type="button" disabled>Apple Music<ArrowIcon /></button>
+                </span>
               </span>
             </span>
           </motion.span>
