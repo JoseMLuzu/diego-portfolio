@@ -1,27 +1,22 @@
 import { ArrowIcon } from './ArrowIcon'
-import { ContactForm } from './ContactForm'
 import { contact } from '../data/contact'
 
 export function Contact() {
+  const channels = [
+    { label: 'EMAIL', text: contact.email || 'Correo electrónico', href: contact.email ? `mailto:${contact.email}` : null },
+    { label: 'WHATSAPP', text: 'Hablemos por WhatsApp', href: contact.whatsappUrl },
+  ]
   return (
-    <>
-      <section className="contact-content" aria-labelledby="contact-title">
-        <p className="home-discipline">CONTACTO</p>
-        <h1 id="contact-title">Hablemos<span>.</span></h1>
-        <p className="contact-intro">Ideas, música y colaboraciones.</p>
-        <ContactForm />
-        {contact.email && (
-          <address className="contact-address">
-            <a href={`mailto:${contact.email}`}>{contact.email}<span aria-hidden="true"><ArrowIcon /></span></a>
-          </address>
-        )}
-        {contact.links.length > 0 && (
-          <ul className="contact-socials" aria-label="Redes y otros canales">
-            {contact.links.map(link => <li key={link.url}><a href={link.url} target="_blank" rel="noreferrer">{link.label}<span aria-hidden="true"><ArrowIcon /></span></a></li>)}
-          </ul>
-        )}
-      </section>
-      <footer className="home-footer"><a href="#/proyectos">Ver proyectos <span aria-hidden="true"><ArrowIcon /></span></a><span>© {new Date().getFullYear()} Diego Suarez</span></footer>
-    </>
+    <section className="contact-content" aria-labelledby="contact-title">
+      <h1 id="contact-title" className="sr-only">Contacto</h1>
+      <address className="contact-channels">
+        {channels.map(channel => {
+          const content = <><span className="contact-channel-label">{channel.label}</span><span className="contact-channel-value">{channel.text}</span><ArrowIcon /></>
+          return channel.href
+            ? <a className="contact-channel" key={channel.label} href={channel.href} target={channel.label === 'WHATSAPP' ? '_blank' : undefined} rel={channel.label === 'WHATSAPP' ? 'noopener noreferrer' : undefined}>{content}</a>
+            : <span className="contact-channel" key={channel.label} aria-disabled="true">{content}</span>
+        })}
+      </address>
+    </section>
   )
 }

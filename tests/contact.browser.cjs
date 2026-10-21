@@ -3,7 +3,7 @@ const { test, before, after } = require('node:test')
 const assert = require('node:assert/strict')
 const { spawn } = require('node:child_process')
 const { once } = require('node:events')
-const { mkdtemp, readFile, rm } = require('node:fs/promises')
+const { mkdtemp, rm } = require('node:fs/promises')
 const { tmpdir } = require('node:os')
 const path = require('node:path')
 const { chromium } = require('playwright')
@@ -25,15 +25,9 @@ async function open(options = {}) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 960 }, ...options })
   await mockCatalog(page)
   await page.goto(`${base}/#/contacto`)
-  await page.locator('.contact-form').waitFor()
+  await page.locator('.contact-channels').waitFor()
   return page
 }
-const fillMessage = async page => {
-  await page.getByRole('textbox', { name: 'Nombre', exact: true }).fill('Prueba de adjuntos')
-  await page.getByRole('textbox', { name: 'Email', exact: true }).fill('musica@example.com')
-  await page.getByRole('textbox', { name: 'Mensaje', exact: true }).fill('Propuesta de colaboración con un demo.')
-}
-
 test('about water reveals locally at the sides, follows the cursor and hides at the center', async () => {
   const page = await browser.newPage({ viewport: { width: 1440, height: 960 } })
   await mockCatalog(page)
@@ -79,65 +73,19 @@ test('about water supports touch, compact screens and reduced motion without mov
   await page.close()
 })
 
-test('contact selects, removes, drops and uploads real attachments with the message', async () => {
+test('contact contains only email and WhatsApp channels without a form or extra footer', async () => {
   const page = await open()
-  const input = page.locator('input[type="file"]')
-  await input.setInputFiles([
-    { name: 'demo.wav', mimeType: 'audio/wav', buffer: Buffer.from('RIFF-demo-audio') },
-    { name: 'brief.pdf', mimeType: 'application/pdf', buffer: Buffer.from('Brief musical') },
-  ])
-  assert.equal(await page.locator('.attachment-list li').count(), 2)
-  await page.getByRole('button', { name: 'Quitar brief.pdf' }).click()
-  assert.equal(await page.locator('.attachment-list li').count(), 1)
-  await input.setInputFiles({ name: 'rechazado.exe', mimeType: 'application/octet-stream', buffer: Buffer.from('invalid') })
-  assert.match(await page.getByRole('alert').textContent(), /rechazado.exe/)
-  await page.locator('.file-dropzone').evaluate(element => {
-    const transfer = new DataTransfer()
-    transfer.items.add(new File(['Reference notes'], 'referencia.pdf', { type: 'application/pdf' }))
-    element.dispatchEvent(new DragEvent('drop', { dataTransfer: transfer, bubbles: true, cancelable: true }))
-  })
-  assert.equal(await page.locator('.attachment-list li').count(), 2)
-  await fillMessage(page)
-  const receipt = page.waitForResponse(response => response.url().endsWith('/api/contact') && response.status() === 201)
-  await page.getByRole('button', { name: /Enviar mensaje/ }).click()
-  const { id } = await (await receipt).json()
-  await page.getByRole('status').waitFor()
-  assert.match(await page.getByRole('status').textContent(), /Mensaje recibido/)
-  assert.equal(await page.locator('.attachment-list li').count(), 0)
-  const record = JSON.parse(await readFile(path.join(storage, id, 'message.json'), 'utf8'))
-  assert.deepEqual(record.attachments.map(file => file.name), ['demo.wav', 'referencia.pdf'])
-  assert.equal(await readFile(path.join(storage, id, record.attachments[0].storedName), 'utf8'), 'RIFF-demo-audio')
+  assert.equal(await page.locator('.contact-channel').count(), 2)
+  assert.deepEqual(await page.locator('.contact-channel-label').allTextContents(), ['EMAIL', 'WHATSAPP'])
+  assert.equal(await page.locator('form, input, textarea, .contact-socials, .home-footer').count(), 0)
+  for (const viewport of [{width:320,height:568},{width:844,height:390},{width:1440,height:960}]) {
+    await page.setViewportSize(viewport)
+    const channels = await page.locator('.contact-channel').evaluateAll(elements => elements.map(element => element.getBoundingClientRect().toJSON()))
+    assert.ok(channels.every(box => box.height >= 44 && box.x >= 0 && box.right <= viewport.width && box.y >= 80 && box.bottom <= viewport.height))
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
+  }
   await page.close()
 })
-
-test('upload failure keeps the message and attachments for retry', async () => {
-  const page = await open()
-  await fillMessage(page)
-  await page.locator('input[type="file"]').setInputFiles({ name: 'demo.mp3', mimeType: 'audio/mpeg', buffer: Buffer.from('audio') })
-  await page.route('**/api/contact', route => route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'No se pudo guardar el mensaje. Inténtalo de nuevo.' }) }))
-  await page.getByRole('button', { name: /Enviar mensaje/ }).click()
-  await page.getByRole('alert').waitFor()
-  assert.equal(await page.locator('.attachment-list li').count(), 1)
-  assert.equal(await page.getByRole('textbox', { name: 'Nombre', exact: true }).inputValue(), 'Prueba de adjuntos')
-  assert.equal(await page.getByRole('status').count(), 0)
-  await page.unroute('**/api/contact')
-  await page.getByRole('button', { name: /Enviar mensaje/ }).click()
-  await page.getByRole('status').waitFor()
-  await page.close()
-})
-
-test('mobile file picker, long file names and form remain usable at 320px', async () => {
-  const page = await open({ viewport: { width: 320, height: 740 }, isMobile: true, hasTouch: true })
-  const picker = page.waitForEvent('filechooser')
-  await page.getByRole('button', { name: /Añadir archivos/ }).tap()
-  await (await picker).setFiles({ name: `${'demo-con-un-nombre-muy-largo-'.repeat(4)}.mp3`, mimeType: 'audio/mpeg', buffer: Buffer.from('audio') })
-  assert.equal(await page.locator('.attachment-list li').count(), 1)
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
-  await page.getByRole('button', { name: /^Quitar/ }).tap()
-  assert.equal(await page.locator('.attachment-list li').count(), 0)
-  await page.close()
-})
-
 
 test('mobile pages fit compact phones, larger phones and landscape with reachable controls', async () => {
   const page = await open({ viewport: { width: 320, height: 568 }, isMobile: true, hasTouch: true })
@@ -170,33 +118,6 @@ test('mobile pages fit compact phones, larger phones and landscape with reachabl
   await page.close()
 })
 
-test('mobile form supports readable fields, a reduced keyboard viewport and a real touch submission', async () => {
-  const page = await open({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
-  const fields = await page.locator('.contact-fields input').evaluateAll(elements => elements.map(element => ({ font: parseFloat(getComputedStyle(element).fontSize), box: element.getBoundingClientRect().toJSON() })))
-  assert.ok(fields.every(field => field.font >= 16 && field.box.height >= 44))
-  assert.ok(fields[1].box.y >= fields[0].box.bottom, 'Fields should be stacked on mobile')
-  assert.equal(await page.locator('.file-picker-drag-hint').isVisible(), false)
-  assert.equal(await page.locator('.file-picker-touch-hint').isVisible(), true)
-  await page.getByRole('textbox', { name: 'Email', exact: true }).tap()
-  // Approximate the viewport remaining above an on-screen keyboard.
-  await page.setViewportSize({ width: 390, height: 420 })
-  await fillMessage(page)
-  await page.getByRole('textbox', { name: 'Mensaje', exact: true }).scrollIntoViewIfNeeded()
-  const messageBox = await page.getByRole('textbox', { name: 'Mensaje', exact: true }).boundingBox()
-  assert.ok(messageBox.y >= 0 && messageBox.y + messageBox.height <= 420)
-  await page.locator('input[type="file"]').setInputFiles({ name: 'demo-movil.wav', mimeType: 'audio/wav', buffer: Buffer.from('mobile-audio') })
-  await page.setViewportSize({ width: 390, height: 844 })
-  const receipt = page.waitForResponse(response => response.url().endsWith('/api/contact') && response.status() === 201)
-  await page.getByRole('button', { name: /Enviar mensaje/ }).tap()
-  const { id } = await (await receipt).json()
-  await page.getByRole('status').waitFor()
-  assert.match(await page.getByRole('status').textContent(), /Mensaje recibido/)
-  const record = JSON.parse(await readFile(path.join(storage, id, 'message.json'), 'utf8'))
-  assert.equal(record.attachments[0].name, 'demo-movil.wav')
-  await page.close()
-})
-
-
 test('home and projects share one pinned scroll timeline and navigation returns to its beginning', async () => {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
   await mockCatalog(page)
@@ -221,7 +142,7 @@ test('home and projects share one pinned scroll timeline and navigation returns 
   await page.waitForFunction(() => scrollY < 1)
   assert.equal(await page.locator('.carousel-image[aria-current]').count(), 0)
   await page.getByRole('link', { name: 'Contacto', exact: true }).tap()
-  await page.locator('.contact-form').waitFor()
+  await page.locator('.contact-channels').waitFor()
   assert.equal(await page.locator('.scroll-story').count(), 0)
   await page.close()
 })

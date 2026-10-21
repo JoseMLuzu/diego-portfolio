@@ -1,8 +1,9 @@
-// Set the artist's email and social links here when available.
+// Configure the artist's real contact details here.
+// WhatsApp accepts a complete https://wa.me/... link with the country code.
 export const contact: {
   email: string | null
-  links: { label: string; url: string }[]
+  whatsappUrl: string | null
 } = {
   email: null,
-  links: [],
+  whatsappUrl: null,
 }

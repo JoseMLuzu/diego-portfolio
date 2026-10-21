@@ -72,41 +72,19 @@ After installing WebKit with `npx playwright install webkit`, set `MOBILE_BROWSE
 
 Reference: a local video supplied by the user. Frames were extracted to compare proportions, vertical alignment, and spacing.
 
-## Contact and attachments
+## Contact
 
-`#/contacto` accepts a name, email address, message, and up to 5 attachments. Supported formats include audio (MP3, WAV, FLAC, M4A, AAC, OGG, Opus, AIFF), PDF, JPG, PNG, WebP, and ZIP. Limits are 25 MB per file and 50 MB in total. Visitors can select multiple files, drag and drop them, and remove them before submission. Failed submissions preserve the message and attachments for retry.
+The contact page presents only two direct channels: email and WhatsApp. Configure `email` and the full `whatsappUrl` in `src/data/contact.ts`. Email uses `mailto:` and WhatsApp opens a new tab. Missing details are displayed as disabled placeholders, without invented destinations. Both rows have large touch targets and fit compact portrait and landscape screens.
 
-The form sends `multipart/form-data` to `POST /api/contact`. The Node service validates fields and limits again, saves the file bytes and a `message.json` record in `data/contact/<id>/`, and only then confirms receipt. This directory is ignored by Git and is not served as static content. The service does not send emails or automatic notifications; submissions are stored locally on the server.
-
-```sh
-# Node >= 22.18.0. Start the frontend and API together:
-npm run dev
-# Build and serve the application alongside the API:
-npm run build
-npm start
-```
-
-`npm start` defaults to `http://127.0.0.1:8787`. Set `CONTACT_PORT` to change the port and `CONTACT_STORAGE_DIR` to choose a persistent storage directory. When deploying, run the Node service and keep this directory on a persistent volume; serving only `dist/` cannot receive uploads. If Vite is already running, start the API separately with `npm run dev:api`.
-
-The optional direct email address and contact-page social links are configured in `src/data/contact.ts`. The form does not need a recipient email address to store messages.
-
-```sh
-npm test
-npm run test:contact
-# Build before testing the actual browser submission flow:
-npm run build
-npm run test:uploads
-```
-
-Upload tests use temporary directories and remove their data afterward. They check saved bytes, rejection of invalid file types and sizes, submissions without attachments, file selection and drag-and-drop, removal, retry after failure, and the touch file picker at 320 px.
+The previous form, attachment validation and local API implementation are retained in the repository but are no longer part of the public contact page. No files or messages are submitted by the current contact UI. The existing `test:uploads` command now checks the contact page, responsive navigation and home interactions; server attachment tests remain available separately for the retained API.
 
 ## Mobile priority
 
-Styles start with the phone layout and add the desktop layout from 960 px. Home, Projects, and Contact work from 320 px in portrait and landscape. Navigation, arrows, and attachment controls have touch targets of at least 44 px. Thumbnails keep their progressive visual size while retaining an independent touch target of at least 44 px.
+Styles start with the phone layout and add the desktop layout from 960 px. Home, Projects, and Contact work from 320 px in portrait and landscape. Navigation, arrows, and direct contact controls have touch targets of at least 44 px. Thumbnails keep their progressive visual size while retaining an independent touch target of at least 44 px.
 
 The carousel uses the available width and height to size covers; its controls also fit compact phones. In landscape, the release title and arrows move to the side. Phone safe areas and browser bars are accounted for through `env(safe-area-inset-*)` and `svh`, without disabling user zoom.
 
-The form stacks fields on mobile, uses 16 px inputs and an email keyboard, and provides a touch-friendly file picker. The submit button spans the form width. The `npm run test:uploads` tests include five mobile viewport sizes, landscape orientation, touch targets, actual attachment submission, and a reduced viewport approximating the space above the keyboard. Physical-device testing remains separate from this emulation.
+The direct contact rows wrap long email addresses without horizontal overflow and fit portrait and landscape screens. Browser tests cover five mobile viewport sizes and accessible navigation. Physical-device testing remains separate from this emulation.
 
 ## Home social links
 

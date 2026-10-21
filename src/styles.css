@@ -77,11 +77,15 @@ main:focus, .projects-section:focus { outline: none; }
   .home-about-trigger:hover { color: #f0eeeb; }
 }
 
-.contact-content { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 28px max(var(--gutter), env(safe-area-inset-right, 0px)) 36px max(var(--gutter), env(safe-area-inset-left, 0px)); text-align: center; }
-.contact-content .home-discipline { margin-bottom: 22px; }
-.contact-content h1 { font-size: clamp(54px, 14vw, 96px); font-weight: 450; line-height: 1.05; letter-spacing: -.065em; margin: 0 0 18px; }
-.contact-content h1 > span { color: #e15c3b; }
-.contact-intro { color: #b8b3ac; font-size: 14px; line-height: 1.6; margin: 0; }
+.contact-content { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px max(var(--gutter), env(safe-area-inset-right, 0px)) 64px max(var(--gutter), env(safe-area-inset-left, 0px)); }
+.contact-channels { width: min(100%, 640px); font-style: normal; }
+.contact-channel { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 20px; align-items: center; min-height: 112px; padding: 24px 0; border-bottom: 1px solid #ffffff20; }
+.contact-channel:first-child { border-top: 1px solid #ffffff20; }
+.contact-channel-label { grid-column: 1; margin-bottom: 12px; font-size: 10px; letter-spacing: .16em; color: #a5a19b; }
+.contact-channel-value { grid-column: 1; font-size: clamp(20px, 4vw, 36px); line-height: 1.3; letter-spacing: -.04em; overflow-wrap: anywhere; }
+.contact-channel > .arrow-icon { grid-column: 2; grid-row: 1 / 3; font-size: 24px; color: #e15c3b; transition: transform 180ms; }
+.contact-channel[aria-disabled="true"] { color: #a5a19b; }
+.contact-channel[aria-disabled="true"] > .arrow-icon { color: #655d54; }
 .contact-form { width: min(100%, 520px); margin-top: 32px; text-align: left; }
 .contact-form fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .contact-form fieldset:disabled { opacity: .65; }
@@ -115,11 +119,6 @@ main:focus, .projects-section:focus { outline: none; }
 .form-feedback { padding: 14px 0 0; margin: 16px 0 0; font-size: 14px; line-height: 1.6; scroll-margin-block: 24px; }
 .form-feedback.is-success { color: #bed6ae; }
 .form-feedback.is-error { color: #efa08b; }
-.contact-address { font-style: normal; max-width: 100%; margin-top: 32px; }
-.contact-address a { display: inline-flex; min-height: 48px; align-items: center; gap: 18px; padding: 10px 0; border-bottom: 1px solid #655d54; font-size: clamp(16px, 2.3vw, 28px); letter-spacing: -.03em; overflow-wrap: anywhere; text-align: left; }
-.contact-address a > span { font-size: 20px; flex-shrink: 0; }
-.contact-socials { list-style: none; margin: 24px 0 0; padding: 0; display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 24px; }
-.contact-socials a { display: inline-flex; min-height: 44px; align-items: center; gap: 10px; padding: 10px 0; font-size: 14px; color: #b8b3ac; }
 
 .gallery { width: 100%; position: relative; }
 .carousel { height: calc(var(--page-height) - var(--caption-height) - var(--controls-height) - env(safe-area-inset-bottom, 0px)); min-height: 160px; position: relative; overflow: hidden; outline: none; touch-action: pan-y pinch-zoom; cursor: grab; user-select: none; -webkit-user-select: none; }
@@ -237,15 +236,16 @@ main:focus, .projects-section:focus { outline: none; }
   .projects-link { min-height: 44px; padding-block: 8px; }
 }
 @media (hover: hover) {
+  .contact-channel[href]:hover > .arrow-icon { transform: translate(3px, -3px); }
   .home-social[href]:hover { color: #f0eeeb; }
-  .site-nav a:hover, .home-footer a:hover, .contact-socials a:hover { color: #f0eeeb; }
+  .site-nav a:hover, .home-footer a:hover { color: #f0eeeb; }
   .projects-link:hover .link-arrow { transform: translate(2px, -2px); }
   .file-picker:hover { background: #ffffff08; }
   .file-picker .file-picker-drag-hint { display: block; }
   .file-picker .file-picker-touch-hint { display: none; }
   .attachment-list button:hover { color: #fff; }
   .send-button:hover { background: #fff; }
-  .contact-address a:hover, .listen-link:hover { border-color: #ede8df; }
+  .listen-link:hover { border-color: #ede8df; }
   .gallery-controls button:hover:not(:disabled) { background: #242321; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
