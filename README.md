@@ -117,3 +117,9 @@ The form stacks fields on mobile, uses 16 px inputs and an email keyboard, and p
 The text in `src/data/about.ts` is placeholder copy that can be replaced easily. `HomeAboutWater.tsx` distributes it behind the entire home scene. A soft mask follows the cursor along the sides and reveals fragments with a water-like distortion; the reveal fades when the pointer leaves. On phones, touching or moving a finger reveals the background without capturing or preventing vertical scrolling. The description is also available to screen readers. There is no visible button; Escape and leaving the home scene hide the reveal.
 
 `ABOUT_WATER` centralizes the reveal radius, spacing, distortion, touch linger time, and tracking spring. React does not update on every frame; the effect uses Motion Values and a local SVG filter. Reduced motion removes the distortion and spring-based tracking. The original popover idea is preserved in `HomeAbout.tsx`; its import and render are commented out in `VerticalCarousel.tsx`.
+
+## Content management with Sanity
+
+The independent admin panel lives in `studio/` and points to project `rr2covtm`, dataset `production`. Install its dependencies with `npm --prefix studio ci`, then start it with `npm run dev:studio`. It has its own package lock and does not add Studio dependencies to the public website bundle.
+
+The **Proyectos musicales** schema includes cover uploads, accessible image descriptions, release metadata, contribution credits, carousel order and a visibility switch. Connecting the portfolio to published content is a separate frontend integration. See [the Studio guide](studio/README.md) for editing, checks, authentication and deployment.

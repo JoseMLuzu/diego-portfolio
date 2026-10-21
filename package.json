@@ -13,7 +13,9 @@
     "start": "node server/index.mjs",
     "dev:api": "node server/index.mjs",
     "test:contact": "node --test tests/contact.server.test.mjs",
-    "test:uploads": "node --test tests/contact.browser.cjs"
+    "test:uploads": "node --test tests/contact.browser.cjs",
+    "dev:studio": "npm --prefix studio run dev --",
+    "build:studio": "npm --prefix studio run build"
   },
   "dependencies": {
     "react": "^19.2.0",
