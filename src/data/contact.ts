@@ -4,6 +4,6 @@ export const contact: {
   email: string | null
   whatsappUrl: string | null
 } = {
-  email: null,
-  whatsappUrl: null,
+  email: 'diegosuarez1020@gmail.com',
+  whatsappUrl: 'https://wa.me/525631690671',
 }

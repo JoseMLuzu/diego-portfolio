@@ -3,8 +3,8 @@ import { contact } from '../data/contact'
 
 export function Contact() {
   const channels = [
-    { label: 'EMAIL', text: contact.email || 'Correo electrónico', href: contact.email ? `mailto:${contact.email}` : null },
     { label: 'WHATSAPP', text: 'Hablemos por WhatsApp', href: contact.whatsappUrl },
+    { label: 'EMAIL', text: contact.email || 'Correo electrónico', href: contact.email ? `mailto:${contact.email}` : null },
   ]
   return (
     <section className="contact-content" aria-labelledby="contact-title">

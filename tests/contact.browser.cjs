@@ -76,7 +76,7 @@ test('about water supports touch, compact screens and reduced motion without mov
 test('contact contains only email and WhatsApp channels without a form or extra footer', async () => {
   const page = await open()
   assert.equal(await page.locator('.contact-channel').count(), 2)
-  assert.deepEqual(await page.locator('.contact-channel-label').allTextContents(), ['EMAIL', 'WHATSAPP'])
+  assert.deepEqual(await page.locator('.contact-channel-label').allTextContents(), ['WHATSAPP', 'EMAIL'])
   assert.equal(await page.locator('form, input, textarea, .contact-socials, .home-footer').count(), 0)
   for (const viewport of [{width:320,height:568},{width:844,height:390},{width:1440,height:960}]) {
     await page.setViewportSize(viewport)
