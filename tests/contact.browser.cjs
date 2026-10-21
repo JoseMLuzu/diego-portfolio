@@ -1,3 +1,4 @@
+const { mockCatalog } = require('./helpers/catalog.cjs')
 const { test, before, after } = require('node:test')
 const assert = require('node:assert/strict')
 const { spawn } = require('node:child_process')
@@ -22,6 +23,7 @@ before(async () => {
 after(async () => { await browser?.close(); if (server?.exitCode === null) { const closed = once(server, 'exit'); server.kill('SIGTERM'); await closed } if (storage) await rm(storage, { recursive: true, force: true }) })
 async function open(options = {}) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 960 }, ...options })
+  await mockCatalog(page)
   await page.goto(`${base}/#/contacto`)
   await page.locator('.contact-form').waitFor()
   return page
@@ -34,6 +36,7 @@ const fillMessage = async page => {
 
 test('about water reveals locally at the sides, follows the cursor and hides at the center', async () => {
   const page = await browser.newPage({ viewport: { width: 1440, height: 960 } })
+  await mockCatalog(page)
   await page.goto(`${base}/#/`)
   assert.equal(await page.locator('.home-about').count(), 0, 'Archived popover must not render')
   const field = page.locator('.about-water')
@@ -58,6 +61,7 @@ test('about water supports touch, compact screens and reduced motion without mov
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, reducedMotion: 'reduce' })
   for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }, { width: 844, height: 390 }]) {
     await page.setViewportSize(viewport)
+    await mockCatalog(page)
     await page.goto(`${base}/#/`)
     await page.reload()
     const field = page.locator('.about-water')
@@ -140,6 +144,7 @@ test('mobile pages fit compact phones, larger phones and landscape with reachabl
   for (const viewport of [{ width: 320, height: 568 }, { width: 375, height: 667 }, { width: 390, height: 844 }, { width: 430, height: 932 }, { width: 844, height: 390 }]) {
     await page.setViewportSize(viewport)
     for (const route of ['', 'proyectos', 'contacto']) {
+      await mockCatalog(page)
       await page.goto(`${base}/#/${route}`)
       if (route === 'proyectos') await page.waitForFunction(() => document.querySelector('.gallery').getAttribute('aria-hidden') === 'false' && Math.abs(scrollY - (document.querySelector('.scroll-story').getBoundingClientRect().height - document.querySelector('.story-stage').getBoundingClientRect().height) / Number(document.querySelector('.scroll-story').dataset.lastScene)) < 2)
       await page.waitForTimeout(80)
@@ -194,8 +199,10 @@ test('mobile form supports readable fields, a reduced keyboard viewport and a re
 
 test('home and projects share one pinned scroll timeline and navigation returns to its beginning', async () => {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+  await mockCatalog(page)
   await page.goto(`${base}/#/`)
   await page.locator('.story-home').waitFor()
+  await page.waitForFunction(() => document.querySelectorAll('.carousel-image').length === 9)
   assert.equal(await page.locator('.carousel-image[aria-current]').count(), 0)
   const step = await page.evaluate(() => (document.querySelector('.scroll-story').getBoundingClientRect().height - document.querySelector('.story-stage').getBoundingClientRect().height) / Number(document.querySelector('.scroll-story').dataset.lastScene))
   await page.evaluate(y => scrollTo(0, y), step * 0.3)

@@ -1,3 +1,4 @@
+const { mockCatalog } = require('./helpers/catalog.cjs')
 const { test, before, after } = require('node:test')
 const assert = require('node:assert/strict')
 const engineName = process.env.MOBILE_BROWSER || 'chromium'
@@ -13,6 +14,7 @@ after(async () => { await browser?.close() })
 async function open() {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
   page.setDefaultTimeout(5000)
+  await mockCatalog(page)
   await page.goto(`${url}/#/proyectos`)
   await page.evaluate(() => document.fonts.ready)
   await centered(page, 1)
@@ -214,6 +216,7 @@ test('record emerges progressively and can be put away by tapping its exposed to
 
 test('blurred record artwork stays circular on desktop through repeated openings', async () => {
   const page = await browser.newPage({ viewport: { width: 1440, height: 960 } })
+  await mockCatalog(page)
   await page.goto(`${url}/#/proyectos`)
   await centered(page, 1)
   // A bright diagnostic texture makes any square layer leaking beyond the

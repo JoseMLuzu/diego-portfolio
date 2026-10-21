@@ -1,0 +1,57 @@
+const { test, before, after } = require('node:test')
+const assert = require('node:assert/strict')
+const { mockCatalog, catalogRoute, releases } = require('./helpers/catalog.cjs')
+const engine = require('playwright')[process.env.MOBILE_BROWSER || 'chromium']
+const url = process.env.CAROUSEL_URL || 'http://127.0.0.1:5190'
+let browser
+before(async () => { browser = await engine.launch({ headless:true, ...(process.env.PLAYWRIGHT_EXECUTABLE_PATH ? {executablePath:process.env.PLAYWRIGHT_EXECUTABLE_PATH} : {}) }) })
+after(async () => { await browser?.close() })
+
+test('a delayed catalog opens the requested project, shows credits and keeps one-project boundaries usable on mobile', async () => {
+  const page = await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true})
+  let resolve
+  const ready = new Promise(r => {resolve = r})
+  await page.route(catalogRoute, async route => {
+    const request = new URL(route.request().url())
+    assert.equal(request.searchParams.get('perspective'), 'published')
+    await ready
+    await route.fulfill({json:{result:[{...releases[0],title:'Canción de prueba',contribution:{roles:['Mezcla'],description:'Mezcla del proyecto.'}}]}})
+  })
+  await page.goto(`${url}/#/proyectos`)
+  await page.getByText('Cargando proyectos…', {exact:true}).waitFor()
+  resolve()
+  await page.locator('.release-caption h2').filter({hasText:'Canción de prueba'}).waitFor()
+  await page.waitForFunction(() => document.querySelector('.carousel-image[aria-current]')?.dataset.imageIndex === '0')
+  assert.equal(await page.locator('.carousel-image').count(),1)
+  await page.getByRole('button',{name:'Mi participación',exact:true}).tap()
+  await page.getByText('Mezcla del proyecto.',{exact:true}).waitFor()
+  await page.getByRole('button',{name:'Ver invitación de contacto',exact:true}).tap()
+  await page.waitForFunction(()=>document.querySelector('.story-outro').getAttribute('aria-hidden')==='false')
+  await page.getByRole('button',{name:'Volver a proyectos',exact:true}).tap()
+  await page.waitForFunction(()=>document.querySelector('.carousel-image[aria-current]')?.dataset.imageIndex==='0')
+  await page.close()
+})
+
+test('empty published catalog shows a useful message and home still works', async () => {
+  const page=await browser.newPage()
+  await mockCatalog(page,[])
+  await page.goto(`${url}/#/proyectos`)
+  await page.getByText('Próximamente, nuevos proyectos.',{exact:true}).waitFor()
+  assert.equal(await page.locator('.carousel-image').count(),0)
+  await page.getByRole('link',{name:'Volver al inicio',exact:true}).click()
+  await page.locator('#home-title').waitFor()
+  await page.close()
+})
+
+test('a failed request can be retried without silently showing demo releases', async () => {
+  const page=await browser.newPage()
+  let fail=true
+  await page.route(catalogRoute,route=>fail?route.fulfill({status:400,json:{error:{description:'Test error'}}}):route.fulfill({json:{result:[releases[0]]}}))
+  await page.goto(`${url}/#/proyectos`)
+  await page.getByText('No se pudieron cargar los proyectos.',{exact:true}).waitFor()
+  assert.equal(await page.locator('.carousel-image').count(),0)
+  fail=false
+  await page.getByRole('button',{name:'Reintentar',exact:true}).click()
+  await page.locator('.release-caption h2').filter({hasText:'Órbita'}).waitFor()
+  await page.close()
+})

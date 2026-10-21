@@ -1,0 +1,51 @@
+import { createClient } from '@sanity/client'
+import { createImageUrlBuilder } from '@sanity/image-url'
+import type { Release } from '../data/releases'
+
+export const sanityClient = createClient({
+  projectId: 'rr2covtm',
+  dataset: 'production',
+  apiVersion: '2026-10-20',
+  perspective: 'published',
+  // Fetch fresh published content when the page opens; no browser token needed.
+  useCdn: false,
+  timeout: 10000,
+  maxRetries: 1,
+})
+
+const images = createImageUrlBuilder(sanityClient)
+export const releasesQuery = `*[_type == "release" && visible == true && defined(cover.asset)]
+  | order(order asc, title asc, _id asc) {
+    "id": _id, title, artist, format, year, contribution,
+    "src": cover.asset->url, "alt": cover.alt,
+    "crop": cover.crop, "hotspot": cover.hotspot
+  }`
+
+type PublishedRelease = Partial<Release> & {
+  crop?: { top: number; bottom: number; left: number; right: number }
+  hotspot?: { x: number; y: number; width: number; height: number }
+}
+
+export function normalizeReleases(documents: PublishedRelease[]): Release[] {
+  return documents.flatMap(document => {
+    if (!document.id || !document.title || !document.src) return []
+    const src = document.src.startsWith('https://cdn.sanity.io/images/')
+      ? images.image({ asset: { url: document.src }, crop: document.crop, hotspot: document.hotspot })
+        .width(720).height(720).fit('crop').auto('format').quality(85).url()
+      : document.src
+    return [{
+      id: document.id, title: document.title, src,
+      alt: document.alt || `Portada de ${document.title}`,
+      artist: document.artist || 'Diego Suarez', format: document.format || 'Single', year: document.year || '',
+      contribution: {
+        roles: document.contribution?.roles || [],
+        description: document.contribution?.description || '',
+      },
+    }]
+  })
+}
+
+export async function fetchReleases(signal?: AbortSignal): Promise<Release[]> {
+  const documents = await sanityClient.fetch<PublishedRelease[]>(releasesQuery, {}, { signal })
+  return normalizeReleases(documents)
+}

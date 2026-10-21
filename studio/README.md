@@ -19,7 +19,7 @@ Open **Proyectos musicales**, create a document and fill in the title, artist, c
 
 Use **Orden en el carrusel** to sort projects (lowest number first) and **Mostrar en la web** to control visibility. Save unfinished work as a draft; publish only when ready. The Spotify and Apple Music controls remain placeholders without URLs, as requested.
 
-The portfolio must be connected separately to read published documents from this dataset. Publishing in Studio stores the content in Sanity; the frontend integration determines when it appears on the website.
+The portfolio reads published documents from this dataset on page load. To show a project, upload its cover, enable **Mostrar en la web**, and click **Publish**. Refresh the portfolio after publishing; content changes do not require a new Vercel build. The frontend integration code itself must first be deployed. Local demo releases are used only as browser test fixtures.
 
 ## Checks
 

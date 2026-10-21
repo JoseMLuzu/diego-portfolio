@@ -265,3 +265,8 @@ main:focus, .projects-section:focus { outline: none; }
   .outro-content .home-discipline { margin-bottom: 6px; }
   .outro-description { margin-top: 6px; }
 }
+
+.catalog-status { min-height: var(--page-height); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; text-align: center; color: #b8b3ac; }
+.catalog-status p { margin: 0; }
+.catalog-status button, .catalog-status a { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 10px 16px; font: inherit; }
+.catalog-status button { background: transparent; border: 1px solid #655d54; color: #eeeae3; cursor: pointer; }

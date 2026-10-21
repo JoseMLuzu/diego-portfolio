@@ -15,21 +15,24 @@
     "test:contact": "node --test tests/contact.server.test.mjs",
     "test:uploads": "node --test tests/contact.browser.cjs",
     "dev:studio": "npm --prefix studio run dev --",
-    "build:studio": "npm --prefix studio run build"
+    "build:studio": "npm --prefix studio run build",
+    "test:catalog": "node --test tests/catalog.browser.cjs"
   },
   "dependencies": {
+    "@sanity/client": "^8.10.1",
+    "@sanity/image-url": "^2.1.1",
+    "motion": "^12.23.24",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "motion": "^12.23.24"
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.4",
-    "typescript": "~5.9.3",
-    "vite": "^7.1.9",
     "tsx": "^4.20.6",
-    "@playwright/test": "^1.56.0"
+    "typescript": "~5.9.3",
+    "vite": "^7.1.9"
   },
   "engines": {
     "node": ">=22.18.0"

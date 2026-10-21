@@ -4,7 +4,7 @@ import { useReducedMotion } from 'motion/react'
 import { Contact } from './components/Contact'
 import { VerticalCarousel } from './components/VerticalCarousel'
 import type { CarouselHandle } from './components/VerticalCarousel'
-import { releases } from './data/releases'
+import { useReleases } from './hooks/useReleases'
 
 type Page = 'home' | 'projects' | 'contact'
 const currentPage = (): Page => {
@@ -15,6 +15,8 @@ const currentPage = (): Page => {
 const pageTitles: Record<Page, string> = { home: 'Diego Suarez — Música', projects: 'Proyectos — Diego Suarez', contact: 'Contacto — Diego Suarez' }
 
 export default function App() {
+  const { releases, status, retry } = useReleases()
+  const catalogReady = status === 'ready' && releases.length > 0
   const [page, setPage] = useState(currentPage)
   const [visibleSection, setVisibleSection] = useState<'home' | 'projects' | 'outro'>('home')
   const main = useRef<HTMLElement>(null)
@@ -47,13 +49,16 @@ export default function App() {
 
   useEffect(() => {
     document.title = pageTitles[page]
+    if (page === 'projects' && !catalogReady) return
+    // Resolving the catalog must not reset a gesture already started on home.
+    if (previousPage.current === page) return
     const frame = requestAnimationFrame(() => {
       const firstVisit = previousPage.current === null
       scrollToPage(page, firstVisit || reducedMotion || page === 'contact' ? 'instant' : 'smooth')
       previousPage.current = page
     })
     return () => cancelAnimationFrame(frame)
-  }, [page, reducedMotion])
+  }, [page, reducedMotion, catalogReady])
 
 
   return (
@@ -67,7 +72,13 @@ export default function App() {
         </nav>
       </header>
       <main ref={main} tabIndex={-1} className={isContact ? 'contact-page' : 'home'}>
-        {isContact ? <Contact /> : (
+        {isContact ? <Contact /> : page === 'projects' && !catalogReady ? (
+          <section className="catalog-status" aria-live="polite" aria-busy={status === 'loading'}>
+            <p>{status === 'loading' ? 'Cargando proyectos…' : status === 'error' ? 'No se pudieron cargar los proyectos.' : 'Próximamente, nuevos proyectos.'}</p>
+            {status === 'error' && <button type="button" onClick={retry}>Reintentar</button>}
+            <a href="#/">Volver al inicio</a>
+          </section>
+        ) : (
           <VerticalCarousel ref={story} images={releases} onSceneChange={scene => setVisibleSection(scene === 0 ? 'home' : scene > releases.length ? 'outro' : 'projects')} />
         )}
       </main>

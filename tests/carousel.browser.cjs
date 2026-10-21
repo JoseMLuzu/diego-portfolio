@@ -1,3 +1,4 @@
+const { mockCatalog } = require('./helpers/catalog.cjs')
 const { test, before, after } = require('node:test')
 const assert = require('node:assert/strict')
 const { chromium } = require('playwright')
@@ -9,6 +10,7 @@ const scale = (page, index) => page.locator(`[data-image-index="${index}"] img`)
 const metrics = page => page.evaluate(() => ({ step: (document.querySelector('.scroll-story').getBoundingClientRect().height - document.querySelector('.story-stage').getBoundingClientRect().height) / Number(document.querySelector('.scroll-story').dataset.lastScene), y: scrollY }))
 async function open(options = {}, route = '') {
   const page = await browser.newPage({ viewport: { width: 1440, height: 960 }, ...options })
+  await mockCatalog(page)
   await page.goto(`${url.split('#')[0]}#/${route}`)
   await page.locator('.story-stage').waitFor()
   await page.waitForTimeout(150)
