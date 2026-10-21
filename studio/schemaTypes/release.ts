@@ -72,6 +72,20 @@ export const release = defineType({
       ],
     }),
     defineField({
+      name: 'spotifyUrl',
+      title: 'Enlace de Spotify',
+      type: 'url',
+      description: 'Opcional. Pega el enlace completo de esta canción, EP o álbum en Spotify.',
+      validation: (rule) => rule.uri({scheme: ['https']}),
+    }),
+    defineField({
+      name: 'appleMusicUrl',
+      title: 'Enlace de Apple Music',
+      type: 'url',
+      description: 'Opcional. Pega el enlace completo de este proyecto en Apple Music.',
+      validation: (rule) => rule.uri({scheme: ['https']}),
+    }),
+    defineField({
       name: 'order',
       title: 'Orden en el carrusel',
       type: 'number',

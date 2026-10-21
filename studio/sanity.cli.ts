@@ -6,6 +6,7 @@ export default defineCliConfig({
     dataset: 'production',
   },
   deployment: {
+    appId: 'vnwli5kwlfa5nh0xcw1zpu9e',
     // Build the installed, locked version instead of fetching a remote runtime.
     autoUpdates: false,
   },

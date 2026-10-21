@@ -16,7 +16,7 @@ export const sanityClient = createClient({
 const images = createImageUrlBuilder(sanityClient)
 export const releasesQuery = `*[_type == "release" && visible == true && defined(cover.asset)]
   | order(order asc, title asc, _id asc) {
-    "id": _id, title, artist, format, year, contribution,
+    "id": _id, title, artist, format, year, contribution, spotifyUrl, appleMusicUrl,
     "src": cover.asset->url, "alt": cover.alt,
     "crop": cover.crop, "hotspot": cover.hotspot
   }`
@@ -24,6 +24,14 @@ export const releasesQuery = `*[_type == "release" && visible == true && defined
 type PublishedRelease = Partial<Release> & {
   crop?: { top: number; bottom: number; left: number; right: number }
   hotspot?: { x: number; y: number; width: number; height: number }
+}
+
+function streamingUrl(value?: string): string | undefined {
+  if (!value) return undefined
+  try {
+    const url = new URL(value.trim())
+    return url.protocol === 'https:' ? url.href : undefined
+  } catch { return undefined }
 }
 
 export function normalizeReleases(documents: PublishedRelease[]): Release[] {
@@ -35,6 +43,8 @@ export function normalizeReleases(documents: PublishedRelease[]): Release[] {
       : document.src
     return [{
       id: document.id, title: document.title, src,
+      spotifyUrl: streamingUrl(document.spotifyUrl),
+      appleMusicUrl: streamingUrl(document.appleMusicUrl),
       alt: document.alt || `Portada de ${document.title}`,
       artist: document.artist || 'Diego Suarez', format: document.format || 'Single', year: document.year || '',
       contribution: {

@@ -17,7 +17,7 @@ Open the URL printed by the CLI (normally `http://localhost:3333`) and sign in w
 
 Open **Proyectos musicales**, create a document and fill in the title, artist, cover and alternative text, format, year, contribution roles and description. The description is limited to 160 characters so it can fit the mobile record layout.
 
-Use **Orden en el carrusel** to sort projects (lowest number first) and **Mostrar en la web** to control visibility. Save unfinished work as a draft; publish only when ready. The Spotify and Apple Music controls remain placeholders without URLs, as requested.
+Use **Orden en el carrusel** to sort projects (lowest number first) and **Mostrar en la web** to control visibility. Save unfinished work as a draft; publish only when ready. Optional **Enlace de Spotify** and **Enlace de Apple Music** fields accept full HTTPS URLs for this specific release. Publish the document after adding them. Configured links open a new tab from the record; platforms without a URL remain disabled.
 
 The portfolio reads published documents from this dataset on page load. To show a project, upload its cover, enable **Mostrar en la web**, and click **Publish**. Refresh the portfolio after publishing; content changes do not require a new Vercel build. The frontend integration code itself must first be deployed. Local demo releases are used only as browser test fixtures.
 

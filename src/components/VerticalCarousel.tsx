@@ -49,8 +49,12 @@ function CarouselImage({ image, index, position, width, config, active, select, 
                 <span className="record-roles">{image.contribution.roles.join(' · ')}</span>
                 <span className="record-description">{image.contribution.description}</span>
                 <span className="record-streaming" data-story-interactive="true" style={{ pointerEvents: active && expanded ? 'auto' : 'none' }}>
-                  <button type="button" disabled>Spotify<ArrowIcon /></button>
-                  <button type="button" disabled>Apple Music<ArrowIcon /></button>
+                  {[
+                    { label: 'Spotify', href: image.spotifyUrl },
+                    { label: 'Apple Music', href: image.appleMusicUrl },
+                  ].map(platform => platform.href
+                    ? <a key={platform.label} href={platform.href} target="_blank" rel="noopener noreferrer" tabIndex={active && expanded ? 0 : -1} aria-label={`Escuchar ${image.title} en ${platform.label}`}>{platform.label}<ArrowIcon /></a>
+                    : <button key={platform.label} type="button" disabled>{platform.label}<ArrowIcon /></button>)}
                 </span>
               </span>
             </span>

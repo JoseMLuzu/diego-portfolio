@@ -145,8 +145,9 @@ main:focus, .projects-section:focus { outline: none; }
 .record-roles { margin-top: 4%; font-size: 3.6cqw; line-height: 1.4; }
 .record-description { margin-top: 3%; color: #dad5cf; font-size: 3.4cqw; line-height: 1.45; max-width: 90%; }
 .record-streaming { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 2%; }
-.record-streaming button { display: inline-flex; align-items: center; gap: 4px; min-width: 44px; min-height: 49px; font-size: clamp(10px, 3.4cqw, 13px); color: #e9e1d9; border: 0; padding: 0; background: transparent; opacity: 1; cursor: default; }
-.record-streaming button svg { width: 1em; height: 1em; }
+.record-streaming button, .record-streaming a { display: inline-flex; align-items: center; gap: 4px; min-width: 49px; min-height: 49px; font-size: clamp(10px, 3.4cqw, 13px); color: #e9e1d9; border: 0; padding: 0; background: transparent; opacity: 1; cursor: default; }
+.record-streaming a { cursor: pointer; color: #f3f0ea; }
+.record-streaming button svg, .record-streaming a svg { width: 1em; height: 1em; }
 .cover-details-toggle { display: inline-flex; align-items: center; align-self: center; justify-content: center; gap: 9px; min-height: 44px; padding: 8px 12px; margin-top: 4px; border: 0; background: transparent; color: #b8b3ac; font-size: 12px; cursor: pointer; }
 .cover-details-toggle svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .cover-details-toggle[aria-pressed="true"] { color: #e75d38; }

@@ -7,6 +7,8 @@ export type Release = {
   format: string
   year: string
   contribution: { roles: string[]; description: string }
+  spotifyUrl?: string
+  appleMusicUrl?: string
   listenUrl?: string
 }
 

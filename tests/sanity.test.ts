@@ -29,3 +29,15 @@ test('incomplete releases are skipped without replacing them with example projec
   assert.deepEqual(normalizeReleases([{id: 'no-cover', title: 'Missing cover'}]), [])
   assert.deepEqual(normalizeReleases([]), [])
 })
+
+test('streaming links are optional and only absolute HTTPS links are exposed', () => {
+  const base = {id: 'song', title: 'Song', src: '/covers/orbita.svg'}
+  const [release] = normalizeReleases([{...base, spotifyUrl: ' https://open.spotify.com/track/example ', appleMusicUrl: 'https://music.apple.com/album/example'}])
+  assert.equal(release.spotifyUrl, 'https://open.spotify.com/track/example')
+  assert.equal(release.appleMusicUrl, 'https://music.apple.com/album/example')
+  for (const value of ['javascript:alert(1)', 'http://example.com', '/relative', 'invalid', '']) {
+    const [invalid] = normalizeReleases([{...base, spotifyUrl: value, appleMusicUrl: value}])
+    assert.equal(invalid.spotifyUrl, undefined)
+    assert.equal(invalid.appleMusicUrl, undefined)
+  }
+})
