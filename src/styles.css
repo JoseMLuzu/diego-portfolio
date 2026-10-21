@@ -170,6 +170,13 @@ main:focus, .projects-section:focus { outline: none; }
 .gallery-controls button { display: grid; place-items: center; border: 1px solid #655d54; border-radius: 50%; width: 44px; height: 44px; background: transparent; font-size: 20px; }
 .gallery-controls button:disabled { opacity: .35; cursor: default; }
 
+@media (max-width: 959px) and (orientation: portrait) {
+  /* Let real titles and the details control reserve their own height. */
+  .story-gallery { display: flex; flex-direction: column; }
+  .carousel { flex: 1; height: auto; min-height: 0; }
+  .release-caption, .gallery-bottom { flex-shrink: 0; }
+}
+
 @media (min-width: 600px) {
   :root { --header-height: 96px; --gutter: 28px; }
   .site-nav { gap: 20px; font-size: 14px; }
