@@ -125,12 +125,17 @@ test('home and projects share one pinned scroll timeline and navigation returns 
   await page.locator('.story-home').waitFor()
   await page.waitForFunction(() => document.querySelectorAll('.carousel-image').length === 9)
   assert.equal(await page.locator('.carousel-image[aria-current]').count(), 0)
-  const step = await page.evaluate(() => (document.querySelector('.scroll-story').getBoundingClientRect().height - document.querySelector('.story-stage').getBoundingClientRect().height) / Number(document.querySelector('.scroll-story').dataset.lastScene))
-  await page.evaluate(y => scrollTo(0, y), step * 0.3)
-  await page.waitForTimeout(60)
-  const homeScale = await page.locator('.story-home').evaluate(element => new DOMMatrix(getComputedStyle(element).transform).a)
-  assert.ok(homeScale < 0.95 && homeScale > 0.6)
+  // Hold a real drag so native scrollend cannot snap the timeline before
+  // its intermediate scale is sampled on faster browsers.
+  await page.mouse.move(18, 400)
+  await page.mouse.down()
+  await page.mouse.move(18, 310, {steps: 6})
+  await page.waitForFunction(() => {
+    const scale = new DOMMatrix(getComputedStyle(document.querySelector('.story-home')).transform).a
+    return scale < 0.95 && scale > 0.6
+  })
   assert.equal(await page.locator('.carousel-image[aria-current]').count(), 0)
+  await page.mouse.up()
   await page.getByRole('link', { name: 'Proyectos', exact: true }).tap()
   await page.waitForFunction(() => document.querySelector('.gallery').getAttribute('aria-hidden') === 'false')
   await page.waitForTimeout(1000)

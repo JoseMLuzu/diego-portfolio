@@ -16,7 +16,8 @@
     "test:uploads": "node --test tests/contact.browser.cjs",
     "dev:studio": "npm --prefix studio run dev --",
     "build:studio": "npm --prefix studio run build",
-    "test:catalog": "node --test tests/catalog.browser.cjs"
+    "test:catalog": "node --test tests/catalog.browser.cjs",
+    "test:listen": "node --test tests/listen.browser.cjs"
   },
   "dependencies": {
     "@sanity/client": "^8.10.1",

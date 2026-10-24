@@ -59,3 +59,14 @@ export async function fetchReleases(signal?: AbortSignal): Promise<Release[]> {
   const documents = await sanityClient.fetch<PublishedRelease[]>(releasesQuery, {}, { signal })
   return normalizeReleases(documents)
 }
+
+export type AudioComparison = { title: string; beforeUrl: string; afterUrl: string }
+export const audioComparisonQuery = `*[_type == "audioComparison" && _id == "audio-comparison" && visible == true][0]{
+  title, "beforeUrl": before.asset->url, "afterUrl": after.asset->url
+}`
+
+export async function fetchAudioComparison(signal?: AbortSignal): Promise<AudioComparison | null> {
+  const value = await sanityClient.fetch<AudioComparison | null>(audioComparisonQuery, {}, { signal })
+  if (!value?.title || !value.beforeUrl || !value.afterUrl) return null
+  return value
+}

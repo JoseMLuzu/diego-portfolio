@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import type { MouseEvent } from 'react'
 import { useReducedMotion } from 'motion/react'
+import { Listen } from './components/Listen'
 import { Contact } from './components/Contact'
 import { VerticalCarousel } from './components/VerticalCarousel'
 import type { CarouselHandle } from './components/VerticalCarousel'
 import { useReleases } from './hooks/useReleases'
 
-type Page = 'home' | 'projects' | 'contact'
+type Page = 'home' | 'projects' | 'listen' | 'contact'
 const currentPage = (): Page => {
+  if (window.location.hash === '#/escucha') return 'listen'
   if (window.location.hash === '#/proyectos') return 'projects'
   if (window.location.hash === '#/contacto') return 'contact'
   return 'home'
 }
-const pageTitles: Record<Page, string> = { home: 'Diego Suarez — Música', projects: 'Proyectos — Diego Suarez', contact: 'Contacto — Diego Suarez' }
+const pageTitles: Record<Page, string> = { listen: 'Escucha — Diego Suarez', home: 'Diego Suarez — Música', projects: 'Proyectos — Diego Suarez', contact: 'Contacto — Diego Suarez' }
 
 export default function App() {
   const { releases, status, retry } = useReleases()
@@ -24,9 +26,11 @@ export default function App() {
   const previousPage = useRef<Page | null>(null)
   const reducedMotion = useReducedMotion()
   const isContact = page === 'contact'
+  const isListen = page === 'listen'
+  const isStory = !isContact && !isListen
 
   function scrollToPage(target: Page, behavior: ScrollBehavior) {
-    if (target !== 'contact') story.current?.scrollToScene(target === 'projects' ? 1 : 0, behavior)
+    if (target === 'home' || target === 'projects') story.current?.scrollToScene(target === 'projects' ? 1 : 0, behavior)
     else {
       window.scrollTo({ top: 0, behavior: 'instant' })
       main.current?.focus({ preventScroll: true })
@@ -66,13 +70,14 @@ export default function App() {
       <header className="site-header">
         <a className="wordmark" href="#/" onClick={event => navigate(event, 'home')} aria-label="Diego Suarez, inicio">diego<span className="wordmark-surname">suarez</span></a>
         <nav className="site-nav" aria-label="Navegación principal">
-          <a href="#/" onClick={event => navigate(event, 'home')} aria-current={!isContact && visibleSection === 'home' ? 'page' : undefined}>Inicio</a>
-          <a href="#/proyectos" onClick={event => navigate(event, 'projects')} aria-current={!isContact && visibleSection === 'projects' ? 'location' : undefined}>Proyectos</a>
-          <a href="#/contacto" onClick={event => navigate(event, 'contact')} aria-current={isContact ? 'page' : visibleSection === 'outro' ? 'location' : undefined}>Contacto</a>
+          <a href="#/" onClick={event => navigate(event, 'home')} aria-current={isStory && visibleSection === 'home' ? 'page' : undefined}>Inicio</a>
+          <a href="#/proyectos" onClick={event => navigate(event, 'projects')} aria-current={isStory && visibleSection === 'projects' ? 'location' : undefined}>Proyectos</a>
+          <a href="#/escucha" onClick={event => navigate(event, 'listen')} aria-current={isListen ? 'page' : undefined}>Escucha</a>
+          <a href="#/contacto" onClick={event => navigate(event, 'contact')} aria-current={isContact ? 'page' : isStory && visibleSection === 'outro' ? 'location' : undefined}>Contacto</a>
         </nav>
       </header>
-      <main ref={main} tabIndex={-1} className={isContact ? 'contact-page' : 'home'}>
-        {isContact ? <Contact /> : page === 'projects' && !catalogReady ? (
+      <main ref={main} tabIndex={-1} className={isContact ? 'contact-page' : isListen ? 'listen-page' : 'home'}>
+        {isContact ? <Contact /> : isListen ? <Listen /> : page === 'projects' && !catalogReady ? (
           <section className="catalog-status" aria-live="polite" aria-busy={status === 'loading'}>
             <p>{status === 'loading' ? 'Cargando proyectos…' : status === 'error' ? 'No se pudieron cargar los proyectos.' : 'Próximamente, nuevos proyectos.'}</p>
             {status === 'error' && <button type="button" onClick={retry}>Reintentar</button>}

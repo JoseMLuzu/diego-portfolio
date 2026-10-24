@@ -105,3 +105,11 @@ The **Proyectos musicales** schema includes cover uploads, accessible image desc
 The Sanity browser client is loaded asynchronously to keep it outside the initial UI bundle. Its public configuration is `rr2covtm / production`, uses the published perspective, and does not require a token. Sanity CORS allows `https://diego-portfolio-red.vercel.app`, `http://localhost:5190` and `http://127.0.0.1:5190` without credentials; the Studio login uses its separate credential-enabled `http://localhost:3333` origin. Add any new portfolio domains explicitly in Sanity Manage. A private dataset would require a server-side read endpoint instead of putting a token in frontend code.
 
 Run `npm run test:catalog` against the local Vite URL to check delayed loading, a single release, empty results and retry behavior. Browser gesture suites mock the catalog using local fixtures so editor changes cannot break their expected scene counts.
+
+## Listen — one A/B comparison
+
+`#/escucha` is a standalone listening page, separate from the scroll-driven projects. One visible player switches between the original (A) and processed (B) versions of the same fragment. Both versions preserve the playback position, only one plays at a time, and playback pauses when leaving the page. Nothing autoplays. A native, labelled range input supports touch and keyboard seeking; different file lengths use the shorter duration as the shared timeline. Media failures and content failures provide separate retry controls.
+
+In Sanity Studio, open **Escucha · Antes y después**. This is a singleton with document ID `audio-comparison`: set the fragment title, upload **A · Antes** and **B · Después**, enable visibility and publish. Use aligned excerpts with a similar perceived loudness. MP3 is a practical delivery format; WAV, M4A and AAC uploads are also offered, with actual playback depending on the browser's codec support. The website only receives published content and waits for both files. No demo audio is shipped to visitors.
+
+Run `npm run test:listen` against the local Vite URL for real WAV playback, rapid A/B switching, seek controls, responsive layouts, empty/error states and unmount cleanup. These tests generate their own short audio fixtures and do not upload them to Sanity.
