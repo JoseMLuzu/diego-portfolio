@@ -33,3 +33,7 @@ npm run build:studio
 When ready to publish the Studio, run `npm --prefix studio run deploy` and choose an available Studio hostname. This is separate from deploying the portfolio on Vercel. No Studio deployment is performed automatically by the portfolio build.
 
 The project owner manages invitations in Sanity Manage. Each editor should use their own account; no shared passwords are needed.
+
+## Standalone A/B audio
+
+**Escucha · Antes y después** opens the single `audio-comparison` document. Enter a short title and upload the original and processed versions of the same excerpt, with the same start point. Enable **Mostrar en la web** and publish. The portfolio uses the shorter file duration for its common playback timeline. Prefer small MP3 exports for mobile listeners, and match perceived loudness for a useful comparison. This is separate from the release catalog; it does not add an audio player to each cover.
