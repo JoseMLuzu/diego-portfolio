@@ -4,6 +4,7 @@ import type { MotionValue } from 'motion/react'
 import { CAROUSEL_DEFAULTS, SCROLL_STORY_DEFAULTS, clamp, gestureTarget, imageGeometry } from './carouselMath'
 import type { CarouselConfig } from './carouselMath'
 import { HomeSocials } from './HomeSocials'
+import { CarouselContact } from './CarouselContact'
 import { ArrowIcon } from './ArrowIcon'
 // Previous popover idea, preserved in HomeAbout.tsx:
 // import { HomeAbout } from './HomeAbout'
@@ -420,8 +421,10 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
         <motion.section className="story-outro" style={{ y: outroY, scale: outroScale, opacity: outroOpacity, pointerEvents: outroPointerEvents }} aria-hidden={!isOutro} aria-labelledby="outro-title">
           <div className="outro-content">
             <motion.p className="home-discipline" style={{ opacity: outroDetailOpacity }}>HAGAMOS MÚSICA</motion.p>
-            <h2 id="outro-title"><a href="#/contacto" tabIndex={isOutro ? 0 : -1} aria-label="Hablemos de tu próximo proyecto">Hablemos de tu<span>próximo proyecto<span className="outro-arrow" aria-hidden="true"><ArrowIcon /></span></span></a></h2>
-            <motion.p className="outro-description" style={{ opacity: outroDetailOpacity }}>Cuéntame lo que tienes en mente.</motion.p>
+            <h2 id="outro-title">Hablemos de tu<span>próximo proyecto<span className="name-dot">.</span></span></h2>
+            <motion.div className="outro-contact-reveal" style={{ opacity: outroDetailOpacity }}>
+              <CarouselContact active={isOutro} />
+            </motion.div>
           </div>
           <motion.div className="home-footer" style={{ opacity: outroDetailOpacity }}>
             <button className="outro-back" type="button" data-story-interactive="true" tabIndex={isOutro ? 0 : -1} onClick={() => relativeRef.current(-1)}><span aria-hidden="true"><ArrowIcon direction="up" /></span> Volver a proyectos</button>

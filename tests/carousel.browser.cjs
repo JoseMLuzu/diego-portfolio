@@ -213,7 +213,7 @@ test('a direction reversal interrupts a transition and still ends exactly on a s
 })
 
 
-test('the final invitation scales continuously after the last release and links to contact', async () => {
+test('the final contact scene scales continuously and contains the form and WhatsApp', async () => {
   const page = await open()
   await page.locator('.story-stage').focus()
   await page.keyboard.press('End')
@@ -241,9 +241,14 @@ test('the final invitation scales continuously after the last release and links 
   assert.equal(await active(page), 8)
   await page.getByRole('button', { name: 'Ver invitación de contacto' }).click()
   await settle(page)
-  await page.getByRole('link', { name: 'Hablemos de tu próximo proyecto', exact: true }).click()
-  await page.locator('.contact-form').waitFor()
-  assert.equal(await page.locator('.scroll-story').count(), 0)
+  await page.getByRole('textbox', { name: 'Nombre', exact: true }).fill('Prueba de contacto')
+  await page.getByRole('textbox', { name: 'Email', exact: true }).fill('prueba@example.com')
+  await page.getByRole('textbox', { name: 'Mensaje', exact: true }).fill('Quiero trabajar en un proyecto.')
+  await page.keyboard.press('ArrowUp')
+  assert.equal(await page.locator('.story-outro').getAttribute('aria-hidden'), 'false')
+  assert.equal(await page.getByRole('button', { name: /Enviar mensaje/ }).isDisabled(), true)
+  assert.equal(await page.getByRole('link', { name: 'WhatsApp', exact: true }).getAttribute('href'), 'https://wa.me/525631690671')
+  assert.equal(await page.locator('.scroll-story').count(), 1)
   await page.close()
 })
 
@@ -255,7 +260,8 @@ test('the final invitation fits compact phones and landscape, and touch returns 
     await page.locator('.story-stage').focus()
     await page.keyboard.press('End')
     await page.waitForFunction(() => document.querySelector('.story-outro').getAttribute('aria-hidden') === 'false')
-    const link = await page.getByRole('link', { name: 'Hablemos de tu próximo proyecto', exact: true }).boundingBox()
+    await page.getByRole('link', { name: 'WhatsApp', exact: true }).scrollIntoViewIfNeeded()
+    const link = await page.getByRole('link', { name: 'WhatsApp', exact: true }).boundingBox()
     const back = await page.getByRole('button', { name: 'Volver a proyectos' }).boundingBox()
     assert.ok(link.x >= 0 && link.y >= 64 && link.x + link.width <= viewport.width && link.y + link.height <= viewport.height)
     assert.ok(back.width >= 44 && back.height >= 44 && back.y + back.height <= viewport.height)
@@ -265,9 +271,9 @@ test('the final invitation fits compact phones and landscape, and touch returns 
     await page.getByRole('button', { name: 'Ver invitación de contacto' }).tap()
   }
   const cdp = await page.context().newCDPSession(page)
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 110, y: 180 }] })
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 5, y: 130 }] })
   for (let i = 1; i <= 4; i++) {
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 110, y: 180 + i * 10 }] })
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 5, y: 130 + i * 10 }] })
     await page.waitForTimeout(20)
   }
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })

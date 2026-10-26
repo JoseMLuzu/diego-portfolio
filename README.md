@@ -1,6 +1,6 @@
 # Diego Suarez — Music
 
-A dark, minimal music portfolio at `#/`. The home is scene zero of the carousel: a single scroll timeline shrinks it and moves it upward as the first cover enters. The “Let's talk about your next project” invitation is the final scene: it grows and centers on the same timeline, lets visitors return to the last cover, and opens the contact form when clicked. The `#/proyectos` link leads to the first cover. Built with React, TypeScript, and Motion (`motion/react`), using Vite.
+A dark, minimal music portfolio at `#/`. The home is scene zero of the carousel: a single scroll timeline shrinks it and moves it upward as the first cover enters. The “Let's talk about your next project” invitation is the final scene: it grows and centers on the same timeline, lets visitors return to the last cover, and directly contains a compact contact form and a WhatsApp link. The `#/proyectos` link leads to the first cover. Built with React, TypeScript, and Motion (`motion/react`), using Vite.
 
 ```sh
 npm install
@@ -64,7 +64,7 @@ CAROUSEL_URL=http://127.0.0.1:5173 npm run test:mobile
 
 The first scene contains the artist's name, a short label, and a link to projects. Scrolling turns the home itself into part of the carousel. Opening Contact unmounts the sequence and cleans up its listeners. Navigation supports direct links and browser Back/Forward. The menu follows the active scene.
 
-Tests cover the transition from the home, intermediate positions before the selected index changes, final snapping, direction reversal, wheel/trackpad input, mouse dragging, touch gestures, thumbnails, keyboard input, boundaries, reduced motion, and the final contact invitation. Mobile tests also cover the attachment form. Emulation does not replace testing on a physical phone.
+Tests cover the transition from the home, intermediate positions before the selected index changes, final snapping, direction reversal, wheel/trackpad input, mouse dragging, touch gestures, thumbnails, keyboard input, boundaries, reduced motion, and the final contact invitation. Mobile tests also cover editing the final scene form, a keyboard-sized viewport, and preserving entered text when navigating back to the projects. Emulation does not replace testing on a physical phone.
 
 Mobile carousel regression tests check incidental touches during snapping, repeated arrow taps, cancelled swipes, delayed compatibility clicks, and viewport changes during navigation. Chromium performance counters check that a swipe does not cause layout on every animation frame. Covers and their touch targets scale through transforms; dimensions only change on resize, and measured stage heights are cached outside animation frames. Navigation arrows use inline SVG paths to avoid platform-specific emoji rendering.
 
@@ -76,7 +76,7 @@ Reference: a local video supplied by the user. Frames were extracted to compare 
 
 The contact page presents only two direct channels: email and WhatsApp. Configure `email` and the full `whatsappUrl` in `src/data/contact.ts`. Email uses `mailto:` and WhatsApp opens a new tab. Missing details are displayed as disabled placeholders, without invented destinations. Both rows have large touch targets and fit compact portrait and landscape screens.
 
-The previous form, attachment validation and local API implementation are retained in the repository but are no longer part of the public contact page. No files or messages are submitted by the current contact UI. The existing `test:uploads` command now checks the contact page, responsive navigation and home interactions; server attachment tests remain available separately for the retained API.
+The previous form, attachment validation and local API implementation are retained in the repository but are no longer part of the public contact page. The final carousel scene now renders a separate compact form with name, email and message fields. Its send button is deliberately disabled and labelled “Próximamente”; no form endpoint is connected and no data is submitted. WhatsApp remains active. The carousel ignores wheel, drag and keyboard navigation inside the form, and the form content can scroll within the final scene on small screens. Entered text is retained when returning to the last cover and back within the same mounted carousel. The existing `test:uploads` command now checks the contact page, responsive navigation and home interactions; server attachment tests remain available separately for the retained API.
 
 ## Mobile priority
 
