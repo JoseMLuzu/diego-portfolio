@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useId, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { animate, motion, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from 'motion/react'
-import type { MotionValue } from 'motion/react'
-import { CAROUSEL_DEFAULTS, SCROLL_STORY_DEFAULTS, clamp, gestureTarget, imageGeometry } from './carouselMath'
+import type { MotionStyle, MotionValue } from 'motion/react'
+import { CAROUSEL_DEFAULTS, SCROLL_STORY_DEFAULTS, clamp, gestureTarget, imageGeometry, recordGeometry } from './carouselMath'
 import type { CarouselConfig } from './carouselMath'
 import { HomeSocials } from './HomeSocials'
 import { CarouselContact } from './CarouselContact'
@@ -20,8 +20,8 @@ interface Props {
   onSceneChange?: (scene: number) => void
 }
 
-function CarouselImage({ image, index, position, width, config, active, select, expanded, toggle }: {
-  image: Release; index: number; position: MotionValue<number>; width: MotionValue<number>
+function CarouselImage({ image, index, position, width, frameWidth, frameHeight, config, active, select, expanded, toggle }: {
+  image: Release; index: number; position: MotionValue<number>; width: MotionValue<number>; frameWidth: MotionValue<number>; frameHeight: MotionValue<number>
   config: CarouselConfig; active: boolean; select: (index: number) => void
   expanded: boolean; toggle: () => void
 }) {
@@ -35,12 +35,30 @@ function CarouselImage({ image, index, position, width, config, active, select, 
   // Compensate only when the artwork is smaller than the 44px touch target.
   const hitScale = useTransform(() => Math.max(geometry.get().scale, 44 / width.get(), 44 / imageHeight.get()))
   const artworkScale = useTransform(() => geometry.get().scale / hitScale.get())
+  const opening = useMotionValue(0)
+  useEffect(() => {
+    const animation = animate(opening, expanded ? 1 : 0, { duration: reducedMotion ? 0 : 0.55, ease: [0.22, 0.68, 0.2, 1] })
+    return () => animation.stop()
+  }, [expanded, opening, reducedMotion])
+  const layout = useTransform(() => recordGeometry(width.get(), imageHeight.get(), frameWidth.get(), frameHeight.get()))
+  const discX = useTransform(() => opening.get() * layout.get().discX)
+  const discY = useTransform(() => (imageHeight.get() - width.get()) / 2)
+  const discScale = useTransform(() => 1 + opening.get() * (layout.get().discScale - 1))
+  const discRotate = useTransform(opening, value => -18 * (1 - value))
+  // Keep text metrics fixed during the slide; only GPU transforms animate.
+  const textZoom = useTransform(layout, value => 1 / value.discScale)
+  const discZ = useTransform(opening, value => value > 0.001 ? 3 : 1)
+  const sleeveX = useTransform(() => opening.get() * layout.get().sleeveX)
+  const sleeveScale = useTransform(() => 1 + opening.get() * (layout.get().sleeveScale - 1))
+  const actionX = useTransform(() => opening.get() * layout.get().hitX)
+  const actionScaleX = useTransform(() => 1 + opening.get() * (layout.get().hitScaleX - 1))
+  const actionScaleY = useTransform(() => 1 + opening.get() * (layout.get().hitScaleY - 1))
   return (
     <motion.div className="carousel-image" style={{ y, zIndex, scale: hitScale, width, height: imageHeight }} aria-current={active ? 'true' : undefined} data-image-index={index}>
-      <motion.button className="cover-action" type="button" initial={false} animate={{ scaleY: expanded ? 1.413 : 1, y: expanded ? '3.15%' : '0%' }} transition={{ duration: reducedMotion ? 0 : 0.55, ease: [0.22, 0.68, 0.2, 1] }} tabIndex={active ? 0 : -1} aria-label={active ? `${expanded ? 'Guardar disco de' : 'Ver mi participación en'} ${image.title}` : `Ver ${image.title}`} aria-pressed={active ? expanded : undefined} aria-describedby={expanded ? detailsId : undefined} onClick={() => active ? toggle() : select(index + 1)} />
+      <motion.button className="cover-action" type="button" style={{ x: actionX, scaleX: actionScaleX, scaleY: actionScaleY }} tabIndex={active ? 0 : -1} aria-label={active ? `${expanded ? 'Guardar disco de' : 'Ver mi participación en'} ${image.title}` : `Ver ${image.title}`} aria-pressed={active ? expanded : undefined} aria-describedby={expanded ? detailsId : undefined} onClick={() => active ? toggle() : select(index + 1)} />
       <motion.span className="cover-artwork" style={{ width, height: imageHeight, scale: artworkScale }}>
-        <motion.span className="record-composition" animate={{ scale: expanded ? 0.9 : 1 }} transition={{ duration: reducedMotion ? 0 : 0.5, ease: [0.22, 0.68, 0.2, 1] }}>
-          <motion.span id={detailsId} className="project-record" style={{ width, height: width }} aria-hidden={!expanded} initial={false} animate={{ y: expanded ? '-25%' : '0%', rotate: expanded ? 0 : -18, opacity: expanded ? 1 : 0 }} transition={{ duration: reducedMotion ? 0 : 0.55, ease: [0.22, 0.68, 0.2, 1] }}>
+        <span className="record-composition">
+          <motion.span id={detailsId} className="project-record" style={{ width, height: width, x: discX, y: discY, scale: discScale, rotate: discRotate, opacity: opening, zIndex: discZ, '--record-zoom': textZoom } as MotionStyle} aria-hidden={!expanded}>
             <span className="record-surface">
               <span className="record-art" style={{ backgroundImage: `url("${image.src}")` }} />
               <span className="record-grooves" />
@@ -48,7 +66,7 @@ function CarouselImage({ image, index, position, width, config, active, select, 
                 <span className="record-label">MI PARTICIPACIÓN</span>
                 <span className="record-title">{image.title}</span>
                 <span className="record-roles">{image.contribution.roles.join(' · ')}</span>
-                <span className="record-description">{image.contribution.description}</span>
+                <span className="record-description" data-story-interactive="true" style={{ pointerEvents: active && expanded ? 'auto' : 'none' }}>{image.contribution.description}</span>
                 <span className="record-streaming" data-story-interactive="true" style={{ pointerEvents: active && expanded ? 'auto' : 'none' }}>
                   {[
                     { label: 'Spotify', href: image.spotifyUrl },
@@ -60,10 +78,10 @@ function CarouselImage({ image, index, position, width, config, active, select, 
               </span>
             </span>
           </motion.span>
-          <motion.span className="record-sleeve" initial={false} animate={{ y: expanded ? '48%' : '0%', scale: expanded ? 0.68 : 1 }} transition={{ duration: reducedMotion ? 0 : 0.55, ease: [0.22, 0.68, 0.2, 1] }}>
+          <motion.span className="record-sleeve" style={{ x: sleeveX, scale: sleeveScale }}>
             <img className="cover-front" style={{ width: '100%', height: '100%' }} src={image.src} alt={image.alt} draggable={false} fetchPriority={index === 0 ? 'high' : 'auto'} />
           </motion.span>
-        </motion.span>
+        </span>
       </motion.span>
     </motion.div>
   )
@@ -82,6 +100,7 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
   onSceneChangeRef.current = onSceneChange
   const frameHeight = useMotionValue(760)
   const carouselHeight = useMotionValue(760)
+  const carouselWidth = useMotionValue(390)
   const imageWidth = useMotionValue(config.mainWidth)
   const step = useMotionValue<number>(SCROLL_STORY_DEFAULTS.maxStep)
   const start = useMotionValue(0)
@@ -220,6 +239,7 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
       start.set(trackElement.getBoundingClientRect().top + window.scrollY - headerHeight)
       frameHeight.set(element.clientHeight)
       carouselHeight.set(cards.clientHeight)
+      carouselWidth.set(cards.clientWidth)
       imageWidth.set(Math.min(config.mainWidth, cards.clientWidth * 0.84, cards.clientHeight * 0.64 * config.aspectRatio))
       step.set(nextStep)
       if (measured && wasWithin && (Math.abs(oldStep - nextStep) > 1 || Math.abs(oldStart - start.get()) > 0.5)) {
@@ -391,7 +411,7 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
       element.removeEventListener('click', onClick, true)
       element.removeEventListener('keydown', onKey)
     }
-  }, [carouselHeight, config, frameHeight, imageWidth, lastScene, reducedMotion, scrollY, start, step])
+  }, [carouselHeight, carouselWidth, config, frameHeight, imageWidth, lastScene, reducedMotion, scrollY, start, step])
 
   return (
     <motion.section ref={track} className="scroll-story" data-last-scene={lastScene} style={{ height: trackHeight }} aria-label="Inicio, proyectos y colaboración">
@@ -411,7 +431,7 @@ export const VerticalCarousel = forwardRef<CarouselHandle, Props>(function Verti
         </motion.section>
         <motion.section id="proyectos" className="gallery story-gallery" style={{ opacity: galleryOpacity, pointerEvents: galleryPointerEvents, zIndex: galleryZ }} aria-hidden={!isProject} aria-label="Proyectos musicales">
           <div ref={carousel} className="carousel" role="region" aria-roledescription="carrusel" aria-label="Carrusel de proyectos musicales">
-            {images.map((image, index) => <CarouselImage key={image.id} image={image} index={index} position={visualPosition} width={imageWidth} config={config} active={scene === index + 1} expanded={scene === index + 1 && expandedId === image.id} toggle={() => setExpandedId(current => current === image.id ? null : image.id)} select={index => goToRef.current(index)} />)}
+            {images.map((image, index) => <CarouselImage key={image.id} image={image} index={index} position={visualPosition} width={imageWidth} frameWidth={carouselWidth} frameHeight={carouselHeight} config={config} active={scene === index + 1} expanded={scene === index + 1 && expandedId === image.id} toggle={() => setExpandedId(current => current === image.id ? null : image.id)} select={index => goToRef.current(index)} />)}
             <motion.div className="release-counter" style={{ opacity: captionOpacity }} aria-hidden="true"><span className="eyebrow">PROYECTOS</span><span className="caption-index">{String(projectNumber).padStart(2, '0')} <span>/ {String(images.length).padStart(2, '0')}</span></span></motion.div>
             <motion.div className="position-rail" style={{ opacity: captionOpacity }} aria-label="Seleccionar lanzamiento">{images.map((image, index) => <button key={image.id} tabIndex={isProject ? 0 : -1} className={scene === index + 1 ? 'is-active' : ''} aria-label={`Ir a lanzamiento ${index + 1}: ${image.title}`} aria-current={scene === index + 1 ? 'true' : undefined} onClick={() => goToRef.current(index + 1)}><span /></button>)}</motion.div>
           </div>

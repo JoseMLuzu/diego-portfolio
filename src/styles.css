@@ -138,13 +138,13 @@ main:focus, .projects-section:focus { outline: none; }
 .record-surface { position: absolute; inset: 0; display: block; border-radius: 50%; overflow: hidden; isolation: isolate; -webkit-clip-path: circle(50% at 50% 50%); clip-path: circle(50% at 50% 50%); -webkit-mask-image: -webkit-radial-gradient(white, black); }
 .record-art { position: absolute; inset: -8%; background-size: cover; background-position: center; filter: blur(7px) brightness(.28); }
 .record-grooves { position: absolute; inset: 0; border-radius: inherit; background: repeating-radial-gradient(circle, transparent 0 3px, #ffffff09 3px 4px), radial-gradient(circle, transparent 52%, #0005 100%); }
-.record-content { position: absolute; inset: 15% 12% 12%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #f3f0ea; }
-.record-label { font-size: 2.8cqw; letter-spacing: .13em; color: #ed997c; }
-.record-title { margin-top: 4%; font-size: 6.5cqw; line-height: 1.1; letter-spacing: -.03em; }
-.record-roles { margin-top: 4%; font-size: 3.6cqw; line-height: 1.4; }
-.record-description { margin-top: 3%; color: #dad5cf; font-size: 3.4cqw; line-height: 1.45; max-width: 90%; }
+.record-content { position: absolute; inset: 12% 10% 10%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #f3f0ea; }
+.record-label { font-size: calc(clamp(9px, 2.8cqw, 11px) * var(--record-zoom, 1)); letter-spacing: .13em; color: #ed997c; }
+.record-title { margin-top: 4%; font-size: calc(clamp(16px, 6.5cqw, 24px) * var(--record-zoom, 1)); line-height: 1.1; letter-spacing: -.03em; }
+.record-roles { margin-top: 4%; font-size: calc(clamp(10px, 3.6cqw, 13px) * var(--record-zoom, 1)); line-height: 1.4; }
+.record-description { margin-top: 3%; color: #dad5cf; font-size: calc(clamp(10px, 3.4cqw, 12px) * var(--record-zoom, 1)); line-height: 1.45; max-width: 100%; min-height: 0; overflow-y: auto; overscroll-behavior: contain; pointer-events: auto; }
 .record-streaming { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 2%; }
-.record-streaming button, .record-streaming a { display: inline-flex; align-items: center; gap: 4px; min-width: 49px; min-height: 49px; font-size: clamp(10px, 3.4cqw, 13px); color: #e9e1d9; border: 0; padding: 0; background: transparent; opacity: 1; cursor: default; }
+.record-streaming button, .record-streaming a { display: inline-flex; align-items: center; gap: 4px; min-width: calc(49px * var(--record-zoom, 1)); min-height: calc(49px * var(--record-zoom, 1)); font-size: calc(clamp(10px, 3.4cqw, 13px) * var(--record-zoom, 1)); color: #e9e1d9; border: 0; padding: 0; background: transparent; opacity: 1; cursor: default; }
 .record-streaming a { cursor: pointer; color: #f3f0ea; }
 .record-streaming button svg, .record-streaming a svg { width: 1em; height: 1em; }
 .cover-details-toggle { display: inline-flex; align-items: center; align-self: center; justify-content: center; gap: 9px; min-height: 44px; padding: 8px 12px; margin-top: 4px; border: 0; background: transparent; color: #b8b3ac; font-size: 12px; cursor: pointer; }

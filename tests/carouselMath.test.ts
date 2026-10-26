@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { CAROUSEL_DEFAULTS, clamp, gestureTarget, imageGeometry } from '../src/components/carouselMath.ts'
+import { CAROUSEL_DEFAULTS, clamp, gestureTarget, imageGeometry, recordGeometry } from '../src/components/carouselMath.ts'
 
 const config = CAROUSEL_DEFAULTS
 const geometry = (distance: number) => imageGeometry(distance, config.mainWidth, config)
@@ -53,4 +53,18 @@ test('gesture snapping always targets the origin or exactly one adjacent scene',
   assert.equal(gestureTarget(3, 5, 9, 12), 3)
   assert.equal(gestureTarget(0, -50, 9, 12), 0)
   assert.equal(gestureTarget(9, 50, 9, 12), 9)
+})
+
+
+test('left-opening record and sleeve fit mobile frames and leave desktop captions clear', () => {
+  for (const [width, height, frame, frameHeight] of [[360,360,1440,784],[360,360,960,680],[328,328,390,552],[180,180,320,282],[200,200,510,326]]) {
+    const layout = recordGeometry(width,height,frame,frameHeight)
+    const discLeft = frame/2+layout.discX-width*layout.discScale/2
+    const sleeveRight = frame/2+layout.sleeveX+width*layout.sleeveScale/2
+    assert.ok(discLeft>=15.9)
+    assert.ok(sleeveRight<=(frame>=960?frame/2+200:frame-16)+0.1)
+    assert.ok(layout.discX<layout.sleeveX)
+    assert.ok(width*layout.discScale <= Math.min(360,frameHeight-32)+0.1)
+    assert.ok(layout.sleeveScale<=0.68)
+  }
 })

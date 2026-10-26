@@ -48,3 +48,24 @@ export const SCROLL_STORY_DEFAULTS = {
 export function gestureTarget(origin: number, distance: number, count: number, threshold: number) {
   return clamp(Math.round(origin) + (Math.abs(distance) >= threshold ? Math.sign(distance) : 0), 0, count)
 }
+
+/** Keep the left-opening record inside its frame and clear of desktop captions. */
+export function recordGeometry(width: number, height: number, frameWidth: number, frameHeight: number) {
+  const available = Math.max(1, frameWidth - 32)
+  const disc = Math.min(CAROUSEL_DEFAULTS.mainWidth, available * 0.77, Math.max(1, frameHeight - 32))
+  const sleeve = Math.min(width * 0.68, available * 0.32)
+  const overlap = disc * 0.12
+  const total = disc + sleeve - overlap
+  const right = frameWidth >= 960 ? frameWidth / 2 + 200 : frameWidth - 16
+  const center = Math.min(frameWidth / 2, right - total / 2)
+  const shift = center - frameWidth / 2
+  return {
+    discX: shift - (total - disc) / 2,
+    sleeveX: shift + (total - sleeve) / 2,
+    discScale: disc / width,
+    sleeveScale: sleeve / width,
+    hitX: shift,
+    hitScaleX: total / width,
+    hitScaleY: Math.max(disc, height * sleeve / width) / height,
+  }
+}
