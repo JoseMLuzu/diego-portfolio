@@ -137,8 +137,7 @@ test('record slides out on tap, fits compact screens and resets after navigation
     const frame = await page.locator('.carousel').boundingBox()
     const disc = await cover.locator('.project-record').boundingBox()
     const sleeve = await cover.locator('.record-sleeve').boundingBox()
-    assert.ok([disc,sleeve].every(box => box.x >= frame.x - 1 && box.x + box.width <= frame.x + frame.width + 1 && box.y >= frame.y - 1 && box.y + box.height <= frame.y + frame.height + 1), 'Open record and sleeve must stay inside the carousel')
-    assert.ok(disc.x + disc.width / 2 < sleeve.x + sleeve.width / 2, 'Record must open to the left of its sleeve')
+    assert.ok(disc.y >= frame.y - 1 && sleeve.y + sleeve.height <= frame.y + frame.height + 1, 'Open record and sleeve must stay inside the carousel')
     const toggle = await page.getByRole('button', { name: 'Guardar disco', exact: true }).boundingBox()
     assert.ok(toggle.height >= 44 && toggle.y >= 0 && toggle.y + toggle.height <= viewport.height)
   }
@@ -164,10 +163,9 @@ test('reduced motion opens the record immediately without a slide transition', a
   await page.waitForTimeout(40)
   const geometry = await page.locator('[data-image-index="0"] .project-record').evaluate(el => {
     const transform = new DOMMatrix(getComputedStyle(el).transform)
-    return { x: transform.m41, y: transform.m42, size: el.clientWidth, opacity: getComputedStyle(el).opacity, rotation: transform.m12 }
+    return { y: transform.m42, size: el.clientWidth, opacity: getComputedStyle(el).opacity, rotation: transform.m12 }
   })
-  assert.ok(geometry.x < -1)
-  assert.ok(Math.abs(geometry.y) < 1)
+  assert.ok(Math.abs(geometry.y + geometry.size * 0.25) < 1)
   assert.equal(geometry.opacity, '1')
   assert.ok(Math.abs(geometry.rotation) < 0.001)
   await page.close()
@@ -198,7 +196,7 @@ test('streaming placeholder buttons fit mobile covers and do not contain links',
 })
 
 
-test('record emerges progressively and can be put away by tapping its exposed left edge', async () => {
+test('record emerges progressively and can be put away by tapping its exposed top', async () => {
   const page = await open()
   const cover = page.locator('[data-image-index="0"]')
   const closed = await cover.boundingBox()
@@ -208,8 +206,8 @@ test('record emerges progressively and can be put away by tapping its exposed le
   assert.ok(progress > 0 && progress < 1, 'Record must animate between its closed and open states')
   await page.waitForTimeout(550)
   const disc = await cover.locator('.project-record').boundingBox()
-  assert.ok(disc.x < closed.x - 10, 'Record must emerge to the left of the original cover')
-  await page.touchscreen.tap(disc.x + 12, disc.y + disc.height / 2)
+  assert.ok(disc.y < closed.y - 10, 'Record must emerge above the original cover')
+  await page.touchscreen.tap(disc.x + disc.width / 2, disc.y + 25)
   assert.equal(await cover.locator('.cover-action').getAttribute('aria-pressed'), 'false')
   await page.waitForTimeout(600)
   assert.equal(await cover.locator('.project-record').evaluate(el => getComputedStyle(el).opacity), '0')
